@@ -10,12 +10,12 @@ The published [all-in-one Docker image](DOCKER.md), `synapsr/repere:0.1.1`, rema
 
 Replace these example domains with your own:
 
-| Service           | Build                                                       | Container port                                | Public domain              | Persistent storage             |
-| ----------------- | ----------------------------------------------------------- | --------------------------------------------- | -------------------------- | ------------------------------ |
-| Application       | Repository-root `Dockerfile`                                | **3000**                                      | `app.repere.dev`           | **`/app/uploads`**             |
-| Preview           | `preview/Dockerfile`, with repository root as build context | **3001**                                      | **`*.preview.repere.dev`** | None                           |
-| Website, optional | Its own repository, for example using Nixpacks              | **3002** in the example website configuration | `repere.dev`               | Managed by that project        |
-| Existing MySQL    | Your current database service                               | Usually 3306, internal                        | No public web domain       | Your existing database storage |
+| Service           | Build                                                       | Container port                                | Public domain        | Persistent storage             |
+| ----------------- | ----------------------------------------------------------- | --------------------------------------------- | -------------------- | ------------------------------ |
+| Application       | Repository-root `Dockerfile`                                | **3000**                                      | `app.repere.dev`     | **`/app/uploads`**             |
+| Preview           | `preview/Dockerfile`, with repository root as build context | **3001**                                      | **`*.repere.dev`**   | None                           |
+| Website, optional | Its own repository, for example using Nixpacks              | **3002** in the example website configuration | `repere.dev`         | Managed by that project        |
+| Existing MySQL    | Your current database service                               | Usually 3306, internal                        | No public web domain | Your existing database storage |
 
 The website is independent of the application. It does not need the application's database, authentication secrets or SMTP credentials. This guide does not require the private website repository to run Repère.
 
@@ -38,7 +38,7 @@ Build using `preview/Dockerfile` and the **repository root as context**. The Doc
 
 ```dotenv
 APP_URL=https://app.repere.dev
-PREVIEW_BASE_URL=https://preview.repere.dev
+PREVIEW_BASE_URL=https://repere.dev
 PROXY_SECRET=replace-with-the-shared-random-secret
 PORT=3001
 PREVIEW_MAX_SESSIONS=100
@@ -48,9 +48,11 @@ PREVIEW_MAX_HTML_BYTES=8388608
 
 Use **one replica**: preview sessions currently live in memory. Do not configure `PREVIEW_ALLOWED_PRIVATE_HOSTS` in production. The service needs outbound access to public websites and DNS; it does not need database or SMTP access.
 
-Attach the HTTPS wildcard domain **`*.preview.repere.dev`** to this service on port **3001**. The base `preview.repere.dev` is a naming prefix, not the review page or the control API's public address. Do not add a public route for its control endpoint `/__repere/sessions`.
+Attach the HTTPS wildcard domain **`*.repere.dev`** to this service on port **3001**. Session addresses are `https://<48-hex-characters>.repere.dev`; `PREVIEW_BASE_URL=https://repere.dev` supplies their parent domain. The apex `repere.dev` remains the separate website, not a preview session or a public control API. Do not add a public route for `/__repere/sessions`.
 
-Create the corresponding wildcard DNS record and certificate. A certificate for `*.repere.dev` **does not cover** `<session>.preview.repere.dev`; provision `*.preview.repere.dev` specifically. EasyPanel wildcard certificates require a configured DNS challenge resolver. See the [wildcard-domain guide](https://easypanel.io/docs/guides/wildcard-domain).
+Keep exact routes for **`app.repere.dev` → application:3000** and **`repere.dev` → website:3002** with higher routing priority than the wildcard preview route. In particular, `app.repere.dev` also matches `*.repere.dev` and must never be sent to the preview service. Preserve the exact website route independently; a wildcard subdomain does not include the apex.
+
+Create the wildcard DNS record and a TLS certificate covering **`*.repere.dev`**. This covers each one-level session hostname; the apex website needs its own certificate or explicit `repere.dev` certificate name. Adding the wildcard domain or DNS record alone does not issue this certificate. EasyPanel requires a working **DNS-01 certificate resolver**, with its DNS provider configuration and credentials, selected for the wildcard route. With OVH DNS, configure an OVH-capable resolver or another supported DNS-01 validation arrangement. A missing resolver leaves certificate issuance blocked. See the [wildcard-domain guide](https://easypanel.io/docs/guides/wildcard-domain).
 
 Preserve the original `Host`, WebSocket upgrades and streaming responses at ingress. Avoid overlapping preview replicas during deployment; reopening a preview creates a fresh session after its service restarts.
 
@@ -60,7 +62,7 @@ Build the repository-root `Dockerfile`. Mount a persistent volume at **`/app/upl
 
 ```dotenv
 APP_URL=https://app.repere.dev
-PREVIEW_BASE_URL=https://preview.repere.dev
+PREVIEW_BASE_URL=https://repere.dev
 PROXY_INTERNAL_URL=http://repere_preview:3001
 PROXY_SECRET=replace-with-the-same-shared-random-secret
 SESSION_SECRET=replace-with-an-independent-random-secret
@@ -95,10 +97,10 @@ Deploy the preview service and application using the same source revision. Check
 
 1. The application becomes healthy after its database connection and migrations succeed.
 2. A real email code arrives and signs you in at `app.repere.dev`.
-3. A website project opens under a random 48-character subdomain of `preview.repere.dev`, with a valid certificate and working navigation.
+3. A website project opens under a random 48-character subdomain of `repere.dev`, with a valid certificate and working navigation.
 4. A point and comment persist after refreshing the application. A PDF uploads, renders and retains its comments.
 5. After redeployment, the same database, uploads volume and secrets retain projects, accounts and PDF files. Restarted previews reopen normally.
-6. The independent website still responds at `repere.dev`, and internal control/database endpoints remain private.
+6. Exact-host routing still sends `app.repere.dev` to the application and `repere.dev` to the independent website, while a valid session hostname reaches the preview. Internal control/database endpoints remain private.
 
 The application's health endpoint is `/api/health`. The preview's `/health` endpoint is available on its internal service address. These checks do not validate DNS, certificates, SMTP or compatibility with every website. See the [verification record](VERIFICATION.md) for completed project tests.
 
@@ -116,19 +118,21 @@ For a Compose installation, see [DEPLOYMENT.md](DEPLOYMENT.md). For the single-c
 
 Cette configuration sépare **l'application** et **le proxy d'aperçu**. Le site vitrine reste un projet indépendant. Dans EasyPanel :
 
-| Service                 | Construction                                                      | Port                      | Domaine                    |
-| ----------------------- | ----------------------------------------------------------------- | ------------------------- | -------------------------- |
-| Application             | `Dockerfile` à la racine du dépôt public Repère                   | **3000**                  | `app.repere.dev`           |
-| Aperçu                  | `preview/Dockerfile`, contexte de build à la racine du même dépôt | **3001**                  | **`*.preview.repere.dev`** |
-| Site vitrine facultatif | Son propre dépôt, Nixpacks selon sa configuration                 | **3002** dans cet exemple | `repere.dev`               |
+| Service                 | Construction                                                      | Port                      | Domaine            |
+| ----------------------- | ----------------------------------------------------------------- | ------------------------- | ------------------ |
+| Application             | `Dockerfile` à la racine du dépôt public Repère                   | **3000**                  | `app.repere.dev`   |
+| Aperçu                  | `preview/Dockerfile`, contexte de build à la racine du même dépôt | **3001**                  | **`*.repere.dev`** |
+| Site vitrine facultatif | Son propre dépôt, Nixpacks selon sa configuration                 | **3002** dans cet exemple | `repere.dev`       |
 
-Utilisez les blocs de variables des sections [aperçu](#2-configure-the-preview-service) et [application](#3-configure-the-application-service), avec vos propres identifiants. Dans les deux services, `APP_URL=https://app.repere.dev` et `PREVIEW_BASE_URL=https://preview.repere.dev` doivent correspondre exactement. **`PROXY_SECRET` doit être identique** ; `SESSION_SECRET` reste réservé à l'application et différent de `PROXY_SECRET`.
+Utilisez les blocs de variables des sections [aperçu](#2-configure-the-preview-service) et [application](#3-configure-the-application-service), avec vos propres identifiants. Dans les deux services, `APP_URL=https://app.repere.dev` et `PREVIEW_BASE_URL=https://repere.dev` doivent correspondre exactement. **`PROXY_SECRET` doit être identique** ; `SESSION_SECRET` reste réservé à l'application et différent de `PROXY_SECRET`.
 
 L'application appelle le proxy par **`PROXY_INTERNAL_URL=http://repere_preview:3001`**. Remplacez `repere_preview` si EasyPanel indique un autre nom interne. La base externe utilise **`DATABASE_URL`**, avec une base et un utilisateur déjà créés et autorisés à appliquer les migrations. Conservez la commande par défaut : elle attend MySQL et lance les migrations avant le démarrage du serveur.
 
 Montez un volume persistant sur **`/app/uploads`**, accessible à l'UID/GID 1001. Préservez ce volume, la base et les secrets lors des mises à jour. Gardez une seule réplique par service. Le proxy ne demande aucun volume et ses aperçus se rouvrent après redémarrage.
 
-Configurez un vrai SMTP pour recevoir les codes de connexion. Dirigez `app.repere.dev` vers le port 3000 de l'application et **`*.preview.repere.dev` vers le port 3001 du proxy**, avec le certificat wildcard correspondant. Un certificat `*.repere.dev` ne couvre pas ces sous-domaines d'aperçu. Le domaine nu `repere.dev` reste associé au site vitrine.
+Configurez un vrai SMTP pour recevoir les codes de connexion. Dirigez **`*.repere.dev` vers le port 3001 du proxy** : chaque aperçu utilise `https://<48-caractères-hexadécimaux>.repere.dev`. Donnez aux routes exactes **`app.repere.dev` → application:3000** et **`repere.dev` → site:3002** une priorité supérieure à celle du wildcard. L'application correspond aussi au wildcard ; sa route exacte doit donc rester prioritaire. Le domaine nu reste une route indépendante pour le site vitrine.
+
+Un certificat **`*.repere.dev` couvre ces aperçus sur un seul niveau**, mais pas le domaine nu, qui demande son propre nom dans un certificat. Ajouter le domaine wildcard et son DNS ne suffit pas : configurez un **résolveur DNS-01 fonctionnel**, avec le fournisseur DNS et ses identifiants, puis sélectionnez-le pour cette route EasyPanel. Pour une zone OVH, utilisez un résolveur compatible OVH ou une autre configuration DNS-01 prise en charge. Sans résolveur, l'émission du certificat reste bloquée.
 
 Avant d'inviter vos clients, testez un code email, la navigation dans un site, un commentaire, un PDF et leur conservation après redéploiement. Les contrôles de santé ne suffisent pas à valider SMTP, DNS et TLS.
 

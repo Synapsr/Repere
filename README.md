@@ -157,7 +157,7 @@ On EasyPanel with an existing database, start with the [application and preview 
 A public deployment needs:
 
 - An HTTPS application domain.
-- A wildcard HTTPS domain for preview sessions, for example `*.preview.repere.dev` alongside `app.repere.dev`.
+- A wildcard HTTPS domain for preview sessions, for example `*.repere.dev`, with the exact `app.repere.dev` application route taking priority. The apex `repere.dev` can serve a separate website.
 - An SMTP service for sign-in codes.
 - Backups of MySQL, PDF uploads and configuration.
 

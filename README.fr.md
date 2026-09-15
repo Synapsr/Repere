@@ -157,7 +157,7 @@ Sur EasyPanel avec une base existante, commencez par le [guide application et ap
 Un déploiement public demande :
 
 - Un domaine applicatif en HTTPS.
-- Un domaine HTTPS wildcard pour les aperçus, par exemple `*.preview.repere.dev` à côté de `app.repere.dev`.
+- Un domaine HTTPS wildcard pour les aperçus, par exemple `*.repere.dev`, avec priorité à la route exacte `app.repere.dev` de l’application. Le domaine nu `repere.dev` peut accueillir un site distinct.
 - Un service SMTP pour les codes de connexion.
 - Des sauvegardes de MySQL, des PDF et de la configuration.
 

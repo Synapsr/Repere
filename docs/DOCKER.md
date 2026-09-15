@@ -85,7 +85,7 @@ Configure DNS and HTTPS routes:
 | `*.repere.dev`   | Repère App service, port **8080**                                               |
 | `repere.dev`     | Your separate website, if any; do not route this apex to Repère in this example |
 
-`PREVIEW_BASE_URL` is the parent of preview hostnames, not a page users visit. The gateway accepts only the exact application hostname and valid 48-character preview subdomains. Unknown hostnames receive HTTP 421. Preserve the original `Host`, WebSocket upgrades and streaming responses through your ingress.
+`PREVIEW_BASE_URL` is the parent of preview hostnames, not a page users visit. Keep exact application and apex website routes higher priority than the wildcard route; the apex website must reach its own service. The gateway accepts only the exact application hostname and valid 48-character preview subdomains. Unknown hostnames receive HTTP 421. Preserve the original `Host`, WebSocket upgrades and streaming responses through your ingress.
 
 Provision a wildcard TLS certificate using a DNS challenge. In EasyPanel, configure the certificate resolver and select it for the wildcard domain; an ordinary certificate for `app.repere.dev` alone does not cover preview hosts. [EasyPanel wildcard-domain guide](https://easypanel.io/docs/guides/wildcard-domain).
 
@@ -242,7 +242,7 @@ Ouvrez [localhost:8080](http://localhost:8080) lorsque le conteneur est sain. Le
 2. Utilisez le port cible **8080** et montez un volume persistant sur **`/data`**. Conservez la commande et l'utilisateur par défaut de l'image.
 3. Gardez **une seule réplique**. Désactivez les déploiements avec chevauchement : l'ancien conteneur doit être arrêté avant le nouveau, pour éviter que deux MySQL ouvrent le même volume. Accordez au moins 40 secondes à l'arrêt avec les réglages par défaut.
 4. Renseignez votre SMTP, puis vos domaines, par exemple `APP_URL=https://app.repere.dev` et `PREVIEW_BASE_URL=https://repere.dev`.
-5. Dirigez `app.repere.dev` et `*.repere.dev` vers le service Repère, port **8080**, avec HTTPS. Le domaine nu `repere.dev` peut accueillir un site distinct : il ne sert pas les aperçus dans cet exemple.
+5. Dirigez `app.repere.dev` et `*.repere.dev` vers le service Repère, port **8080**, avec HTTPS. Conservez les routes exactes de l’application et du site prioritaires sur le wildcard. Le domaine nu `repere.dev` peut accueillir un site distinct sur son propre service : il ne sert pas les aperçus dans cet exemple.
 6. Configurez le certificat wildcard via un challenge DNS, puis testez un code email, une relecture de site et un PDF depuis les vraies URL publiques. Le [guide EasyPanel wildcard](https://easypanel.io/docs/guides/wildcard-domain) détaille le résolveur de certificat.
 
 Les aperçus utilisent des origines différentes, du type `https://<48-caractères-hexadécimaux>.repere.dev`. En HTTPS, le cookie de connexion `__Host-repere_session` reste attaché à l'hôte applicatif. Un domaine dédié aux aperçus reste possible, sans obligation d'utiliser un autre domaine enregistrable.

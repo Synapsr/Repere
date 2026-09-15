@@ -45,7 +45,7 @@ Use **`compose.yaml` only** in production. The development overlay adds Mailpit,
    ```
 
 3. Replace these example domains with your own. Point `app.repere.dev` and `*.repere.dev` to the ingress and provision HTTPS, including a wildcard certificate for preview sessions. Each preview has a random 48-character subdomain and a distinct origin; HTTPS app sessions use a host-prefixed cookie. A different registrable domain for previews is also supported. The apex `repere.dev` may point to a separate website: it is not itself a preview session.
-4. Put a TLS reverse proxy in front of the local application and preview ports, normally 3000 and 3001: route the exact app hostname to 3000 and preview session hostnames to 3001. Preserve the preview's `Host`, WebSocket upgrades and streaming responses. Adapt the supplied [Nginx example](nginx.conf), including certificate paths and any generated port changes. Keep the preview control endpoint private.
+4. Put a TLS reverse proxy in front of the local application and preview ports, normally 3000 and 3001: route the exact app hostname to 3000 and preview session hostnames to 3001. Give exact application and apex website routes higher priority than any wildcard preview route, so `app.repere.dev` cannot be captured by `*.repere.dev`. Preserve the preview's `Host`, WebSocket upgrades and streaming responses. Adapt the supplied [Nginx example](nginx.conf), including certificate paths and any generated port changes. Keep the preview control endpoint private.
 5. Start the stack:
 
    ```sh

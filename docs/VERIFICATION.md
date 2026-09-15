@@ -31,7 +31,7 @@ The standard production Docker image compiled successfully with this correction.
 
 ### Production checks still outstanding
 
-A production email-send test was accepted by the configured SMTP service; **receipt in the destination inbox has not been confirmed**. At the time of this record, **wildcard TLS for `*.preview.repere.dev` was not configured**. Local HTTPS isolation tests use a test certificate and do not establish public DNS, certificate issuance, renewal or successful production preview access.
+A production email-send test was accepted by the configured SMTP service; **receipt in the destination inbox has not been confirmed**. At the time of this record, **wildcard TLS for the selected `*.repere.dev` preview route was not configured**. Local HTTPS isolation tests use a test certificate and do not establish public DNS, certificate issuance, renewal or successful production preview access.
 
 ## Docker Hub 0.1.0 — 15 September 2026
 
