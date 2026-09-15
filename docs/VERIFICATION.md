@@ -2,6 +2,50 @@
 
 This page records observed checks, not compatibility promises. Test instructions are in [TESTING.md](TESTING.md).
 
+## Bounded preview opening — after 0.1.0
+
+Four focused scenarios passed in Chromium and Firefox (5.2 seconds, no OTP or production account writes). A stalled API and a silent frame both reach the error state within the single 25-second opening deadline. Frame reloads cannot extend it; retry recovers; late responses and reloads after a successful handshake do not trigger a false timeout. English and French messages and the original-site link were verified.
+
+The standard production Docker image compiled successfully with this correction. This section describes the subsequent source revision; the originally published 0.1.0 image predates the correction.
+
+## Docker Hub 0.1.0 — 15 September 2026
+
+Version **`0.1.0` was published** to [Docker Hub](https://hub.docker.com/r/synapsr/repere) from the frozen source revision [`ef36f020b83851bc1430e83f901c7286e0cae7df`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). Changes made to `main` after that revision are not part of this image.
+
+The tags **`0.1.0`**, **`0.1`** and **`latest`** returned the same public multi-platform index:
+
+```text
+sha256:860000ef8c3ce45f40aff05aacf33935eec7fc4bf4cae1fb83152e83558221fa
+```
+
+| Platform      | Published image manifest                                                  |
+| ------------- | ------------------------------------------------------------------------- |
+| `linux/amd64` | `sha256:a7d430e110e25eec4e78381fa2623efb0349824648f9ab8bb54267d90cf32081` |
+| `linux/arm64` | `sha256:b698de4148a221fb4ebf4e4c932c74ba481c6d252d57a8f55ad9e19d531c85ae` |
+
+- Both variants were built from a clean Git archive of that revision, with the revision/version labels, provenance and SBOM attestations. No local environment file was in the build context.
+- **Both final variants started with integrated MySQL 8.4.11** on fresh disposable volumes, applied migrations creating nine tables, reached Docker's healthy state and returned HTTP 200 from `/api/health`.
+- The corrected healthcheck bundled in each final variant returned exit code 0. Node reported `x64` and `arm64`, respectively. AMD64 ran under Docker Desktop emulation on the ARM64 host; this was a functionality check, not a native-server performance test.
+- Anonymous registry requests returned HTTP 200 and the expected digest for all three tags, with both platform manifests and two attestation manifests present.
+- **Anonymous Docker pulls succeeded for AMD64 and ARM64** using an empty Docker client configuration, with no registry credentials. Existing local layers were reusable; registry access and the returned index were verified publicly.
+- The two disposable smoke containers stopped successfully in 1.76 and 1.01 seconds and were removed with their anonymous data volumes. Existing test or production data was not changed by these smoke checks.
+
+### Integrated database persistence
+
+A separate audit used the preceding ARM64 build (`sha256:5ec6b0f629c14c0e007cb7e98dcdad357fb2498d0799f4cec05f50df3d89cf96`) before the healthcheck correction was bundled:
+
+- A real local Mailpit OTP authenticated a reviewer. A PDF project, named comment and page-two anchor were created; downloaded PDF bytes matched the upload.
+- After stopping and recreating the container with the same environment and named `/data` volume, the authenticated session, owner, project, comment, author, anchor and PDF bytes were preserved.
+- `/data/secrets.json` stayed byte-identical, owned by root with mode `0600`. MySQL reused its existing data directory. Shutdown completed in 1.169 seconds with exit code 0, a clean MySQL shutdown and no OOM kill.
+- MySQL, the application and preview service accepted only loopback traffic inside the container; gateway 8080 was the sole published port. MySQL X was absent.
+- The app user could read uploads but not the MySQL directory or persisted secrets. Preview and gateway users could not read uploads, MySQL data or secrets.
+
+That older image exposed the faulty gateway healthcheck. The fix was exercised against both integrated and external database containers, then included in the final published image whose two-architecture startup checks are recorded above. The persistence round trip and the final image smoke checks are separate pieces of evidence.
+
+### Production checks still outstanding
+
+A production email-send test was accepted by the configured SMTP service; **receipt in the destination inbox has not been confirmed**. At the time of this record, **wildcard TLS for `*.preview.repere.dev` was not configured**. Local HTTPS isolation tests use a test certificate and do not establish public DNS, certificate issuance, renewal or successful production preview access.
+
 ## Production container startup and HTTPS isolation — 15 September 2026
 
 - **128 unit/HTTP tests passed** across 16 files, including the gateway health-check regression test. TypeScript, ESLint and Prettier passed.
@@ -11,7 +55,7 @@ This page records observed checks, not compatibility promises. Test instructions
 
 The standard application image also started against a fresh external MySQL database, applied one migration creating nine tables, and reapplied startup without duplicating the migration. A real PDF upload returned 201 and the downloaded bytes matched. The uploads directory uses UID 1001 and mode 700; PDF files use mode 600. A SIGTERM stopped the application in 437 milliseconds without forced termination.
 
-These results do not imply that the Docker Hub image has been published or that production wildcard TLS has been configured.
+The publication section above records the released image. These local integration checks did not validate production wildcard TLS.
 
 ## Invitation guide and feedback controls — 15 September 2026
 
@@ -105,6 +149,6 @@ Manual inspection also created a comment **only in Repère**, checked its positi
 
 ## Scope
 
-These checks do not cover every website or PDF. Production wildcard domains, certificates, external SMTP and deployment-specific cookie behavior must be verified on the actual host. OAuth, third-party CORS and scripts tied to their original domain may require compatibility work.
+These checks do not cover every website or PDF. Production wildcard domains, certificates, confirmed email receipt and deployment-specific cookie behavior still require verification on the actual host. OAuth, third-party CORS and scripts tied to their original domain may require compatibility work.
 
-Public-site timings are individual observations, not a benchmark or performance guarantee. No hosted CI run, published image or public deployment is implied by this local record.
+Public-site timings are individual observations, not a benchmark or performance guarantee. Docker Hub publication is explicitly recorded above; local test results do not imply a completed public application deployment or a hosted CI result.

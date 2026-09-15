@@ -2,7 +2,7 @@
   "loading": "Ouverture du site…",
   "retryTitle": "L’aperçu est indisponible",
   "retry": "Réessayer",
-  "timeout": "Le site ne répond plus. Réessayez ou ouvrez-le dans un nouvel onglet.",
+  "timeout": "L’aperçu n’a pas pu s’ouvrir. Réessayez dans un instant ou ouvrez le site directement.",
   "openFailed": "Impossible d’ouvrir ce site.",
   "otherSite": "Cette adresse appartient à un autre site. Créez un projet pour la relire.",
   "invalidAddress": "Indiquez une adresse valide pour ce site.",

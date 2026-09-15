@@ -62,7 +62,7 @@ There are no plan tiers or per-reviewer charges in the code. Hosting and email d
 
 The `synapsr/repere` image runs the application, native preview service and **MySQL 8.4 in one container**. It generates and retains its secrets, initializes the database and applies migrations automatically. Docker is the only local runtime requirement.
 
-**First Docker Hub publication is pending.** The image recipe and release workflow are ready; the registry command below becomes available after the first successful push. Until then, [build the same image locally](docs/DOCKER.md#build-the-image-from-source).
+**[Version 0.1.0 is available on Docker Hub](https://hub.docker.com/r/synapsr/repere)** for Linux AMD64 and ARM64. Both variants were started with integrated MySQL and pulled anonymously after publication; see the [verification record](docs/VERIFICATION.md#docker-hub-010--15-september-2026).
 
 Create `.env.docker` with your SMTP provider's settings; sign-in codes require working email delivery:
 
@@ -82,7 +82,7 @@ docker run -d --name repere --restart unless-stopped \
   -p 8080:8080 --stop-timeout 40 \
   -v repere-data:/data \
   --env-file .env.docker \
-  synapsr/repere:latest
+  synapsr/repere:0.1.0
 ```
 
 Open [localhost:8080](http://localhost:8080). Keep `/data` mounted: it contains the database, PDFs and generated secrets. Pin a published version or digest for repeatable deployments. An [external MySQL database](docs/DOCKER.md#external-mysql) is optional.
@@ -205,7 +205,7 @@ The current focus is a complete, understandable point-and-comment workflow. Plan
 - PDF text selection, document versions and additional attachments.
 - More compatibility fixtures, S3 storage and distributed preview sessions.
 
-These are future capabilities, not features exposed by the current API. See the [changelog](CHANGELOG.md) for the work prepared for this first release.
+These are future capabilities, not features exposed by the current API. See the [changelog](CHANGELOG.md) for released changes.
 
 ## Contributing
 

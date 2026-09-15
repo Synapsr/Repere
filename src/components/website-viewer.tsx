@@ -9,6 +9,8 @@ import { parseWebsiteAnchorForOrigin } from "../../shared/validation";
 import { api } from "@/lib/client";
 import { Spinner } from "./ui";
 
+const OPEN_TIMEOUT_MS = 25_000;
+
 type Props = {
   token: string;
   url: string;
@@ -69,12 +71,9 @@ export function WebsiteViewer({
       commentIds: new Set(comments.map((comment) => comment.id)),
     };
   }, [onAnchor, onSelect, mode, comments]);
-  const armReadinessTimeout = useCallback(() => {
+  const clearReadinessTimeout = useCallback(() => {
     if (readinessTimer.current) clearTimeout(readinessTimer.current);
-    readinessTimer.current = setTimeout(() => {
-      setStatus("error");
-      setErrorCode("timeout");
-    }, 30000);
+    readinessTimer.current = null;
   }, []);
   const send = useCallback(
     (message: CommandPayload) => {
@@ -89,6 +88,17 @@ export function WebsiteViewer({
 
   useEffect(() => {
     const controller = new AbortController();
+    // One deadline covers both the API request and the frame handshake. Frame
+    // reloads must not extend it, and a ready frame must not restart it.
+    const timer = setTimeout(() => {
+      controller.abort();
+      readinessTimer.current = null;
+      setSession(null);
+      setError("");
+      setErrorCode("timeout");
+      setStatus("error");
+    }, OPEN_TIMEOUT_MS);
+    readinessTimer.current = timer;
     api<PreviewSession>(`/api/reviews/${token}/preview`, {
       method: "POST",
       signal: controller.signal,
@@ -101,17 +111,21 @@ export function WebsiteViewer({
       })
       .catch((e) => {
         if (!controller.signal.aborted) {
+          clearReadinessTimeout();
           if (e instanceof Error) setError(e.message);
           else setErrorCode("openFailed");
           setStatus("error");
         }
       });
-    return () => controller.abort();
-  }, [token, retry]);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+      if (readinessTimer.current === timer) readinessTimer.current = null;
+    };
+  }, [token, retry, clearReadinessTimeout]);
 
   useEffect(() => {
     if (!session) return;
-    armReadinessTimeout();
     function receive(event: MessageEvent<PreviewEvent>) {
       if (
         event.source !== iframe.current?.contentWindow ||
@@ -125,7 +139,7 @@ export function WebsiteViewer({
         try {
           const next = new URL(message.url);
           if (next.origin !== new URL(session!.targetUrl).origin) return;
-          if (readinessTimer.current) clearTimeout(readinessTimer.current);
+          clearReadinessTimeout();
           if (message.type === "ready") setReadyEpoch((epoch) => epoch + 1);
           setStatus("ready");
           setError("");
@@ -147,17 +161,17 @@ export function WebsiteViewer({
       )
         callbacks.current.onSelect(message.id);
       if (message.type === "error" && typeof message.message === "string") {
-        if (readinessTimer.current) clearTimeout(readinessTimer.current);
+        clearReadinessTimeout();
+        setErrorCode(null);
         setError(message.message.slice(0, 500));
         setStatus("error");
       }
     }
     window.addEventListener("message", receive);
     return () => {
-      if (readinessTimer.current) clearTimeout(readinessTimer.current);
       window.removeEventListener("message", receive);
     };
-  }, [session, armReadinessTimeout]);
+  }, [session, clearReadinessTimeout]);
   useEffect(() => {
     if (status === "ready") send({ type: "mode", mode });
   }, [mode, send, status, currentUrl, readyEpoch]);
@@ -291,7 +305,6 @@ export function WebsiteViewer({
             allow="fullscreen"
             referrerPolicy="no-referrer"
             onLoad={() => {
-              armReadinessTimeout();
               send({ type: "init" });
               send({ type: "locale", locale });
               send({ type: "mode", mode });
@@ -304,7 +317,7 @@ export function WebsiteViewer({
           </div>
         )}
         {status === "error" && (
-          <div className="viewer-state">
+          <div className="viewer-state" role="status">
             <Link2 size={26} />
             <h3>{t("retryTitle")}</h3>
             <p>{errorMessage}</p>
@@ -312,6 +325,15 @@ export function WebsiteViewer({
               {t("retry")}
               <RotateCw size={15} />
             </button>
+            <a
+              className="button secondary"
+              href={currentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t("openExternal")}
+              <ExternalLink size={15} />
+            </a>
           </div>
         )}
       </div>

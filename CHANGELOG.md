@@ -1,8 +1,20 @@
 # Changelog
 
-This file records user-visible changes. The repository has not yet published a tagged release or container image.
+This file records user-visible changes. Container version `0.1.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
-## Unreleased — 0.1.0 preparation
+## Unreleased — 0.1.1
+
+### Fixed
+
+- Website opening now has a single 25-second deadline covering the API request and preview loading. A blocked connection displays a localized retry action and a link to the original website. Frame reloads no longer postpone the deadline or trigger a timeout after a successful load.
+
+## 0.1.0 — 2026-09-15
+
+The published image was built from [`ef36f020`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). Tags `0.1.0`, `0.1` and `latest` identify the same AMD64/ARM64 index:
+
+```text
+sha256:860000ef8c3ce45f40aff05aacf33935eec7fc4bf4cae1fb83152e83558221fa
+```
 
 ### Added
 

@@ -4,7 +4,15 @@
 
 The `synapsr/repere` image contains Next.js, the native website preview service and MySQL 8.4. One gateway exposes port **8080**. The application, preview control API and integrated database listen only inside the container.
 
-**First Docker Hub publication is pending.** Registry commands below become available after a successful image push. You can already [build the same image from source](#build-the-image-from-source). The release workflow targets `linux/amd64` and `linux/arm64`; see the [verification record](VERIFICATION.md) for checks actually completed.
+**[Version 0.1.0 is published on Docker Hub](https://hub.docker.com/r/synapsr/repere)** for `linux/amd64` and `linux/arm64`. Both variants passed startup with integrated MySQL, migrations and health checks, and anonymous pulls succeeded. The image comes from source revision [`ef36f020`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). See the [verification record](VERIFICATION.md#docker-hub-010--15-september-2026) for the scope of these checks.
+
+Published index digest:
+
+```text
+synapsr/repere@sha256:860000ef8c3ce45f40aff05aacf33935eec7fc4bf4cae1fb83152e83558221fa
+```
+
+The tags `0.1.0`, `0.1` and `latest` currently point to this same index. Pin `0.1.0` or the digest for deployment; `latest` and `0.1` may advance with later releases.
 
 ## Start with Docker
 
@@ -26,7 +34,7 @@ docker run -d --name repere --restart unless-stopped \
   -p 8080:8080 --stop-timeout 40 \
   -v repere-data:/data \
   --env-file .env.docker \
-  synapsr/repere:latest
+  synapsr/repere:0.1.0
 ```
 
 Open [localhost:8080](http://localhost:8080). Initialization creates the secrets and database, applies migrations, then starts the application. Wait for the container to become healthy. The first initialization takes longer than a restart.
@@ -48,7 +56,7 @@ Create an **App** service with a Docker Image source. EasyPanel can pull a prebu
 
 | Setting           | Value                                                                                                |
 | ----------------- | ---------------------------------------------------------------------------------------------------- |
-| Image             | `synapsr/repere`, preferably with a published version or digest                                      |
+| Image             | `synapsr/repere:0.1.0`, or the published digest                                                      |
 | Container port    | **8080**                                                                                             |
 | Persistent volume | Mount at **`/data`**                                                                                 |
 | Replicas          | **1**                                                                                                |
@@ -172,7 +180,7 @@ cd Repere
 docker build -f Dockerfile.all-in-one -t repere:local .
 ```
 
-Use `repere:local` in place of `synapsr/repere:latest` in the startup command. The first build downloads dependencies and compiles Next.js and the preview service; allow several minutes depending on the host and network. For separate services or application development, use the [Compose setup](DEPLOYMENT.md#local-setup).
+Use `repere:local` in place of `synapsr/repere:0.1.0` in the startup command. The first build downloads dependencies and compiles Next.js and the preview service; allow several minutes depending on the host and network. For separate services or application development, use the [Compose setup](DEPLOYMENT.md#local-setup).
 
 Repère's application source is MIT licensed. The image also contains upstream software under its respective licenses, including MySQL; keep the image's bundled notices when redistributing it. See [third-party notices](../THIRD_PARTY_NOTICES.md).
 
@@ -193,7 +201,7 @@ No registry credentials are included in the repository. A published GitHub relea
 | Stable `v1.2.3`          | `1.2.3`, `1.2`, `1`, `latest` |
 | Prerelease `v1.3.0-rc.1` | `1.3.0-rc.1` only             |
 
-These are tag-format examples, not a list of published images. A GitHub release explicitly marked as prerelease does not update stable aliases. The workflow targets AMD64 and ARM64 and requests provenance/SBOM attestations. A successful build is not a substitute for runtime smoke tests on the intended host. [Docker multi-platform CI documentation](https://docs.docker.com/build/ci/github-actions/multi-platform/).
+`0.1.0`, `0.1` and `latest` are published. The `1.x` rows illustrate future tag formats. A GitHub release explicitly marked as prerelease does not update stable aliases. The workflow targets AMD64 and ARM64 and requests provenance/SBOM attestations. A successful build is not a substitute for runtime smoke tests on the intended host. [Docker multi-platform CI documentation](https://docs.docker.com/build/ci/github-actions/multi-platform/).
 
 ## Smoke checks after deployment
 
@@ -214,7 +222,7 @@ Health checks cover the app's database access, preview service and gateway; they
 
 L'image `synapsr/repere` contient l'application, le service d'aperçu natif et **MySQL 8.4**. Un seul port est exposé : **8080**. Le volume **`/data`** conserve la base, les PDF et les secrets générés. Les migrations sont automatiques.
 
-**La première publication Docker Hub est en attente.** En attendant, [construisez l'image depuis les sources](#build-the-image-from-source) et remplacez `synapsr/repere:latest` par `repere:local` dans la commande.
+**[La version 0.1.0 est publiée sur Docker Hub](https://hub.docker.com/r/synapsr/repere)** pour Linux AMD64 et ARM64. Les deux variantes ont passé le démarrage avec MySQL intégré, les migrations et les contrôles de santé, puis un téléchargement sans authentification. Le digest commun figure en tête de ce guide. Vous pouvez aussi [construire l’image depuis les sources](#build-the-image-from-source).
 
 Créez `.env.docker` avec les variables du [démarrage Docker](#start-with-docker), en remplaçant les paramètres SMTP par ceux de votre fournisseur, puis exécutez :
 
@@ -223,14 +231,14 @@ docker run -d --name repere --restart unless-stopped \
   -p 8080:8080 --stop-timeout 40 \
   -v repere-data:/data \
   --env-file .env.docker \
-  synapsr/repere:latest
+  synapsr/repere:0.1.0
 ```
 
 Ouvrez [localhost:8080](http://localhost:8080) lorsque le conteneur est sain. Les URL locales `APP_URL` et `PREVIEW_BASE_URL` valent toutes deux `http://localhost:8080`. Les sous-domaines temporaires isolent chaque aperçu. SMTP est indispensable pour recevoir les codes de connexion ; aucun compte ne peut se connecter tant que l'envoi des emails ne fonctionne pas.
 
 ### EasyPanel en pratique
 
-1. Créez un service **App**, source **Docker Image**, image `synapsr/repere` avec une version publiée précise ou un digest.
+1. Créez un service **App**, source **Docker Image**, image `synapsr/repere:0.1.0` ou le digest publié.
 2. Utilisez le port cible **8080** et montez un volume persistant sur **`/data`**. Conservez la commande et l'utilisateur par défaut de l'image.
 3. Gardez **une seule réplique**. Désactivez les déploiements avec chevauchement : l'ancien conteneur doit être arrêté avant le nouveau, pour éviter que deux MySQL ouvrent le même volume. Accordez au moins 40 secondes à l'arrêt avec les réglages par défaut.
 4. Renseignez votre SMTP, puis vos domaines, par exemple `APP_URL=https://app.repere.dev` et `PREVIEW_BASE_URL=https://repere.dev`.

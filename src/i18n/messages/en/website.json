@@ -2,7 +2,7 @@
   "loading": "Opening website…",
   "retryTitle": "The preview is unavailable",
   "retry": "Try again",
-  "timeout": "The website stopped responding. Try again or open it in a new tab.",
+  "timeout": "The preview could not open. Try again in a moment or open the website directly.",
   "openFailed": "Unable to open this website.",
   "otherSite": "This address belongs to another website. Create a project to review it.",
   "invalidAddress": "Enter a valid address for this website.",
