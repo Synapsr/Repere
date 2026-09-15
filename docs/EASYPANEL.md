@@ -4,7 +4,7 @@
 
 Use this setup when you already have a **MySQL 8.4 database** and want separate EasyPanel services. Repère needs two services built from the public [Synapsr/Repere repository](https://github.com/Synapsr/Repere): the application and the native preview proxy. A separate project website is optional and has its own deployment.
 
-The published [all-in-one Docker image](DOCKER.md), `synapsr/repere:0.1.0`, remains an alternative with one gateway and optional integrated MySQL. Do not mix its port 8080 and `/data` settings with the two-service configuration below.
+The published [all-in-one Docker image](DOCKER.md), `synapsr/repere:0.1.1`, remains an alternative with one gateway and optional integrated MySQL. Do not mix its port 8080 and `/data` settings with the two-service configuration below.
 
 ## Services and domains
 
@@ -132,4 +132,4 @@ Configurez un vrai SMTP pour recevoir les codes de connexion. Dirigez `app.reper
 
 Avant d'inviter vos clients, testez un code email, la navigation dans un site, un commentaire, un PDF et leur conservation après redéploiement. Les contrôles de santé ne suffisent pas à valider SMTP, DNS et TLS.
 
-L'[image Docker tout-en-un publiée](DOCKER.md#français), `synapsr/repere:0.1.0`, reste un autre mode de déploiement : elle utilise **8080** et **`/data`**, avec MySQL intégré ou externe. Ces réglages ne sont pas ceux des deux services décrits ici.
+L'[image Docker tout-en-un publiée](DOCKER.md#français), `synapsr/repere:0.1.1`, reste un autre mode de déploiement : elle utilise **8080** et **`/data`**, avec MySQL intégré ou externe. Ces réglages ne sont pas ceux des deux services décrits ici.

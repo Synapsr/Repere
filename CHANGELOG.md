@@ -1,8 +1,14 @@
 # Changelog
 
-This file records user-visible changes. Container version `0.1.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
+This file records user-visible changes. Container version `0.1.1` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
-## Unreleased — 0.1.1
+## 0.1.1 — 2026-09-15
+
+The published image was built from [`8e15dded`](https://github.com/Synapsr/Repere/commit/8e15dded1c922333839022e27c1838e3154a261f). Tags `0.1.1`, `0.1` and `latest` identify this AMD64/ARM64 index:
+
+```text
+sha256:4701bf47e44a7ec46bc4d0e54940f9d9a51b26f9297193a9eb341740900f8e42
+```
 
 ### Fixed
 
@@ -10,7 +16,7 @@ This file records user-visible changes. Container version `0.1.0` is available o
 
 ## 0.1.0 — 2026-09-15
 
-The published image was built from [`ef36f020`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). Tags `0.1.0`, `0.1` and `latest` identify the same AMD64/ARM64 index:
+The published image was built from [`ef36f020`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). The immutable `0.1.0` tag retains this AMD64/ARM64 index; the `0.1` and `latest` aliases have moved to 0.1.1:
 
 ```text
 sha256:860000ef8c3ce45f40aff05aacf33935eec7fc4bf4cae1fb83152e83558221fa

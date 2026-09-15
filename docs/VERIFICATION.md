@@ -2,17 +2,42 @@
 
 This page records observed checks, not compatibility promises. Test instructions are in [TESTING.md](TESTING.md).
 
-## Bounded preview opening — after 0.1.0
+## Docker Hub 0.1.1 — 15 September 2026
+
+Version **`0.1.1` was published** to [Docker Hub](https://hub.docker.com/r/synapsr/repere) from the frozen source revision [`8e15dded`](https://github.com/Synapsr/Repere/commit/8e15dded1c922333839022e27c1838e3154a261f). The tags **`0.1.1`**, **`0.1`** and **`latest`** returned this public multi-platform index:
+
+```text
+sha256:4701bf47e44a7ec46bc4d0e54940f9d9a51b26f9297193a9eb341740900f8e42
+```
+
+| Platform      | Published image manifest                                                  |
+| ------------- | ------------------------------------------------------------------------- |
+| `linux/amd64` | `sha256:0f0a0acdb5b043fd2ecd59be9d694939df80de8bdeeab710384b3c61212a7e32` |
+| `linux/arm64` | `sha256:fcd8b12de76c6f243dfbfd7738dce626c86e649b47e55a13523b371e8837e64b` |
+
+- Both variants were built from a clean Git archive of that revision, excluding local environment files, with version/revision labels, provenance and SBOM attestations.
+- **Both published variants started with integrated MySQL 8.4.11** on fresh disposable volumes. Migrations created nine tables, Docker reported healthy, `/api/health` returned HTTP 200 and the bundled healthcheck exited successfully.
+- Node reported `x64` and `arm64`. AMD64 ran under Docker Desktop emulation on the ARM64 host; this is a functionality check, not a native-server performance test.
+- Anonymous registry requests returned the expected index for all three tags. Both platform manifests carried source revision `8e15dded1c922333839022e27c1838e3154a261f` and version `0.1.1`; two attestation manifests were present.
+- **Anonymous Docker pulls succeeded for both architectures** using an empty Docker client configuration. Existing layers were reusable; registry access and the returned digest were verified publicly.
+- The disposable ARM64 and AMD64 smoke containers stopped successfully in 1.25 and 1.58 seconds, respectively, and were removed with their anonymous volumes.
+- A separate anonymous read confirmed that **`0.1.0` still points to its original digest**, recorded below. Its image was not replaced.
+
+### Bounded preview opening
 
 Four focused scenarios passed in Chromium and Firefox (5.2 seconds, no OTP or production account writes). A stalled API and a silent frame both reach the error state within the single 25-second opening deadline. Frame reloads cannot extend it; retry recovers; late responses and reloads after a successful handshake do not trigger a false timeout. English and French messages and the original-site link were verified.
 
-The standard production Docker image compiled successfully with this correction. This section describes the subsequent source revision; the originally published 0.1.0 image predates the correction.
+The standard production Docker image compiled successfully with this correction. The published 0.1.1 image includes that source revision; the original 0.1.0 image predates it. These four UI checks and the two-architecture startup checks are separate validations; the full earlier integration suite is recorded in its own sections below.
+
+### Production checks still outstanding
+
+A production email-send test was accepted by the configured SMTP service; **receipt in the destination inbox has not been confirmed**. At the time of this record, **wildcard TLS for `*.preview.repere.dev` was not configured**. Local HTTPS isolation tests use a test certificate and do not establish public DNS, certificate issuance, renewal or successful production preview access.
 
 ## Docker Hub 0.1.0 — 15 September 2026
 
 Version **`0.1.0` was published** to [Docker Hub](https://hub.docker.com/r/synapsr/repere) from the frozen source revision [`ef36f020b83851bc1430e83f901c7286e0cae7df`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). Changes made to `main` after that revision are not part of this image.
 
-The tags **`0.1.0`**, **`0.1`** and **`latest`** returned the same public multi-platform index:
+At the first publication, tags **`0.1.0`**, **`0.1`** and **`latest`** returned this public multi-platform index. The immutable `0.1.0` tag still retains it; `0.1` and `latest` now identify 0.1.1:
 
 ```text
 sha256:860000ef8c3ce45f40aff05aacf33935eec7fc4bf4cae1fb83152e83558221fa
@@ -40,11 +65,7 @@ A separate audit used the preceding ARM64 build (`sha256:5ec6b0f629c14c0e007cb7e
 - MySQL, the application and preview service accepted only loopback traffic inside the container; gateway 8080 was the sole published port. MySQL X was absent.
 - The app user could read uploads but not the MySQL directory or persisted secrets. Preview and gateway users could not read uploads, MySQL data or secrets.
 
-That older image exposed the faulty gateway healthcheck. The fix was exercised against both integrated and external database containers, then included in the final published image whose two-architecture startup checks are recorded above. The persistence round trip and the final image smoke checks are separate pieces of evidence.
-
-### Production checks still outstanding
-
-A production email-send test was accepted by the configured SMTP service; **receipt in the destination inbox has not been confirmed**. At the time of this record, **wildcard TLS for `*.preview.repere.dev` was not configured**. Local HTTPS isolation tests use a test certificate and do not establish public DNS, certificate issuance, renewal or successful production preview access.
+That older image exposed the faulty gateway healthcheck. The fix was exercised against both integrated and external database containers, then included in the published 0.1.0 image whose two-architecture startup checks are recorded in this historical section. The persistence round trip and the final image smoke checks are separate pieces of evidence.
 
 ## Production container startup and HTTPS isolation — 15 September 2026
 
