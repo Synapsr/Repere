@@ -19,7 +19,6 @@ This file records user-visible changes. The repository has not yet published a t
 - Docker Compose setup with MySQL, migrations, persistent uploads and a local Mailpit inbox.
 - Unit, HTTP transport and real database/email/browser integration tests.
 - English documentation, a French README, contribution templates and deployment guidance.
-- A bilingual project website with GitHub access, Docker instructions and hosted beta pricing.
 
 ### Known scope
 
