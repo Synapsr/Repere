@@ -18,13 +18,13 @@ import {
   randomToken,
   requestNetwork,
   safeHashEquals,
-  SESSION_COOKIE,
+  sessionCookieName,
   SESSION_TTL_SECONDS,
   tokenHash,
 } from "./security";
 
 export async function currentUser(): Promise<User | null> {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  const token = (await cookies()).get(sessionCookieName())?.value;
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
   const [row] = await database()
     .select({ user: { id: users.id, name: users.name, email: users.email } })
@@ -144,7 +144,7 @@ export async function verifyOtp(
     return user;
   });
   if (!result) throw new ApiError(400, "OTP_INVALID");
-  (await cookies()).set(SESSION_COOKIE, rawToken, {
+  (await cookies()).set(sessionCookieName(), rawToken, {
     httpOnly: true,
     sameSite: "lax",
     secure: appOrigin().startsWith("https:"),
@@ -156,12 +156,12 @@ export async function verifyOtp(
 
 export async function logout() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  const token = cookieStore.get(sessionCookieName())?.value;
   if (token)
     await database()
       .delete(sessions)
       .where(eq(sessions.tokenHash, tokenHash(token)));
-  cookieStore.set(SESSION_COOKIE, "", {
+  cookieStore.set(sessionCookieName(), "", {
     httpOnly: true,
     sameSite: "lax",
     secure: appOrigin().startsWith("https:"),

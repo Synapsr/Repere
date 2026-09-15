@@ -31,7 +31,7 @@ Binary responses, byte ranges and SSE are streamed. The proxy is not a general-p
 
 Each session receives a distinct origin. Website cookies stay **in the reviewer's browser**, without a shared server-side cookie jar. `Set-Cookie` headers are adapted to the preview host with `SameSite=None; Secure; Partitioned`, while preserving attributes such as `HttpOnly`, path and expiry. The bridge also adapts `document.cookie` writes.
 
-The application has its own host-only HTTP-only session cookie. Ports do not isolate cookies. Local random `.localhost` subdomains separate the hosts; production requires **a separate registrable preview domain**, HTTPS and a wildcard certificate. See [deployment](DEPLOYMENT.md).
+The application uses an HTTP-only `__Host-repere_session` cookie on HTTPS: `Secure`, `Path=/`, and no `Domain`. Supporting browsers reject attempts by a sibling preview to plant that cookie for a parent domain. The application ignores the unprefixed legacy session cookie on HTTPS and requires its exact Origin for mutations. Ports do not isolate cookies. Random preview hostnames remain distinct from the application hostname; production requires HTTPS and a wildcard certificate. For example, `app.repere.dev` and `<session>.repere.dev` can share a gateway while `repere.dev` serves the separate website. See [deployment](DEPLOYMENT.md).
 
 Partitioning and cookie restrictions depend on the browser and HTTPS context. Personal sessions on the original site are not imported. Successful sign-in on one site does not establish compatibility with every OAuth or anti-bot flow.
 

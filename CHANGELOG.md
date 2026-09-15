@@ -17,6 +17,10 @@ This file records user-visible changes. The repository has not yet published a t
 - A comment cursor with a plus before placement and a plain bubble after placement.
 - A short, replayable first-visit guide for invited website reviewers, with reduced-motion support.
 - Docker Compose setup with MySQL, migrations, persistent uploads and a local Mailpit inbox.
+- Single-container packaging with integrated MySQL by default or an external MySQL connection.
+- Automatic database readiness checks and migrations in the standard application Docker image.
+- A two-service EasyPanel deployment guide for the application and isolated previews.
+- Host-prefixed HTTPS session cookies and real-browser sibling-origin isolation tests.
 - Unit, HTTP transport and real database/email/browser integration tests.
 - English documentation, a French README, contribution templates and deployment guidance.
 

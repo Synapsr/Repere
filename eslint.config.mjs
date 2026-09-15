@@ -6,6 +6,7 @@ export default defineConfig([
   ...nextTs,
   globalIgnores([
     ".next/**",
+    ".container/**",
     "node_modules/**",
     "public/pdf.worker.min.mjs",
     "public/pdfjs/**",

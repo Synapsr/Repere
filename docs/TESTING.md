@@ -20,7 +20,7 @@ npm run test:e2e
 
 The generated configuration uses app port 3000, preview proxy port 3001, MySQL port 3308, inbox port 8026 and SMTP port 1026 when available. Read `.env` for the actual addresses. Each website review runs in an iframe at a unique `<random>.localhost:3001` origin. Chromium and Firefox resolve localhost subdomains locally. No browser executable is installed or launched by the production application or preview proxy; Playwright browsers are used by the test suite only.
 
-Mailpit belongs only to `compose.dev.yaml`. Configure your real SMTP service with the production `compose.yaml`. Public deployments require a separate wildcard preview domain with HTTPS; use a different registrable domain from the application to isolate site cookies and scripts.
+Mailpit belongs only to `compose.dev.yaml`. Configure your real SMTP service with the production `compose.yaml`. Public deployments require HTTPS and wildcard preview hostnames distinct from the application hostname. The application uses a protected `__Host-` session cookie on HTTPS and enforces exact-Origin mutation checks.
 
 ```sh
 # API integration only: no local browser download required.

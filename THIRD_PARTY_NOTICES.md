@@ -38,6 +38,26 @@ The preview service does not distribute the application fonts, PDF.js worker, or
 | `entities` (used by `parse5`) | BSD 2-Clause | `entities.LICENSE.txt`  |
 | `ipaddr.js`                   | MIT          | `ipaddr.js.LICENSE.txt` |
 
+## All-in-one image
+
+`Dockerfile.all-in-one` combines the application assets and native preview notices above with
+the official `mysql:8.4` base image and the official Node.js 24 binary. MySQL and Oracle Linux
+retain their original software, copyright and license notices in the base image. Repère's MIT
+license and image metadata describe Repère's own code; they do not replace the licenses of
+MySQL, Node.js or other dependencies.
+
+The Node.js distribution's complete license text is copied into `/app/licenses/node.LICENSE.txt`.
+The migration bundle includes `drizzle-orm` (Apache-2.0) and `dotenv` (BSD-2-Clause). Their complete
+license texts are included in `/app/licenses/`. The published `drizzle-orm` 0.45.2 npm package
+omits its license file, so `docker/all-in-one/licenses/drizzle-orm.LICENSE.txt` preserves the
+unmodified [license from that exact upstream release tag](https://github.com/drizzle-team/drizzle-orm/blob/0.45.2/LICENSE).
+
+`mysql2` and its production dependencies are copied as complete packages into
+`/app/node_modules/`, including their own license files. The build does not ship the application's
+development dependency tree. The source definitions for the base images are maintained by
+[Docker's official MySQL image](https://github.com/docker-library/mysql/tree/master/8.4) and
+[the Node.js Docker project](https://github.com/nodejs/docker-node/tree/main/24/bookworm-slim).
+
 The exact versions and transitive dependency graph are recorded in `package-lock.json`. The tables describe the separately copied asset and preview-bundle notices; they are not a complete inventory of every application or container dependency. Consult each installed package and the base image's notices for those components.
 
 Repère is independent of Markup.io and Ceros. Their names are used only to describe the product use case. No logos, proprietary interface assets or source code have been copied.

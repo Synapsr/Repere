@@ -72,7 +72,7 @@ The website runs in the user's browser at a unique 48-hex-character subdomain un
 
 The proxy validates destinations and initial redirects. The backend saves the resulting canonical URL transactionally so anchors use the correct origin. Iframe messages never create comments directly: the app validates an anchor and retains explicit publishing in its interface.
 
-Use different hosts locally, such as `localhost:3000` for the app and `<session>.localhost:3001` for previews. Ports alone do not isolate cookies. In production use HTTPS and a separate registrable preview domain. The backend rejects HTTP previews when the app is HTTPS. See [PREVIEW.md](PREVIEW.md).
+Use different hosts locally, such as `localhost:3000` for the app and `<session>.localhost:3001` for previews. Ports alone do not isolate cookies. In production use HTTPS and wildcard session hostnames distinct from the application hostname. The `__Host-repere_session` cookie cannot be set with a parent Domain; mutations require the exact application Origin. The backend rejects HTTP previews when the app is HTTPS. See [PREVIEW.md](PREVIEW.md).
 
 `DEMO_SITE_URL` is an optional Docker-development mapping from `APP_URL/demo-site` to the internal demo address, preserving path suffix, query and fragment. Leave it unset in production.
 

@@ -525,7 +525,7 @@ async function main() {
     maxHtmlBytes: Number(process.env.PREVIEW_MAX_HTML_BYTES ?? 8 * 1024 * 1024),
   });
   const port = Number(process.env.PORT ?? 3001);
-  service.server.listen(port, "0.0.0.0", () =>
+  service.server.listen(port, process.env.PREVIEW_BIND_HOST ?? "0.0.0.0", () =>
     console.info(`Repere native preview listening on :${port}`),
   );
   const shutdown = () => {

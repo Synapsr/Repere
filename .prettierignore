@@ -9,3 +9,4 @@ test-results
 drizzle/meta
 preview/dist
 .env
+.container/

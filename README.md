@@ -58,9 +58,49 @@ There are no plan tiers or per-reviewer charges in the code. Hosting and email d
 
 ## Quick start
 
-**Requirements:** Docker with Compose v2 and Node.js 22.13+. Node.js 24 is recommended and used in the Docker images.
+**Deploying on EasyPanel with an existing MySQL database?** Follow the [two-service guide](docs/EASYPANEL.md): application on port 3000, preview on port 3001, and your existing database. The single-container option below is also available.
 
-Clone the repository, then run setup:
+The `synapsr/repere` image runs the application, native preview service and **MySQL 8.4 in one container**. It generates and retains its secrets, initializes the database and applies migrations automatically. Docker is the only local runtime requirement.
+
+**First Docker Hub publication is pending.** The image recipe and release workflow are ready; the registry command below becomes available after the first successful push. Until then, [build the same image locally](docs/DOCKER.md#build-the-image-from-source).
+
+Create `.env.docker` with your SMTP provider's settings; sign-in codes require working email delivery:
+
+```dotenv
+APP_URL=http://localhost:8080
+PREVIEW_BASE_URL=http://localhost:8080
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=replace-me
+SMTP_PASSWORD=replace-me
+SMTP_FROM=Repere <hello@example.com>
+SMTP_SECURE=false
+```
+
+```sh
+docker run -d --name repere --restart unless-stopped \
+  -p 8080:8080 --stop-timeout 40 \
+  -v repere-data:/data \
+  --env-file .env.docker \
+  synapsr/repere:latest
+```
+
+Open [localhost:8080](http://localhost:8080). Keep `/data` mounted: it contains the database, PDFs and generated secrets. Pin a published version or digest for repeatable deployments. An [external MySQL database](docs/DOCKER.md#external-mysql) is optional.
+
+For **EasyPanel**, choose [separate application and preview services with existing MySQL](docs/EASYPANEL.md), or deploy this [single image on port 8080](docs/DOCKER.md#easypanel).
+
+### Your first review
+
+1. Open the application and enter your name and an email address.
+2. Enter the sign-in code received in your email inbox.
+3. Create a project from a website URL or PDF. Try the included interactive website or upload the [two-page sample PDF](docs/examples/brand-guidelines.pdf).
+4. Explore the content, switch to commenting, click a detail and publish your feedback.
+5. Copy the sharing link. A reviewer can open it in another browser and sign in with their own email.
+6. Reply and resolve feedback in the conversation panel.
+
+### Development from source
+
+For separate services, hot reloading or a local Mailpit inbox, use the development stack. It requires Docker Compose v2 and Node.js 22.13+; Node.js 24 is recommended.
 
 ```sh
 git clone https://github.com/Synapsr/Repere.git
@@ -68,33 +108,13 @@ cd Repere
 node scripts/setup.mjs
 ```
 
-Setup creates a private `.env` with independent random secrets, selects available local ports, builds the images, starts MySQL and runs the versioned migrations before the application. Existing environment values and data volumes are preserved.
+Setup builds the services, creates an ignored `.env`, chooses available ports and applies migrations. The default app is [localhost:3000](http://localhost:3000), the Mailpit inbox is [localhost:8026](http://localhost:8026), and the preview service uses port 3001. This development setup captures email locally. Existing configuration and volumes are preserved.
 
-| Service           | Default local address                   |
-| ----------------- | --------------------------------------- |
-| Application       | [localhost:3000](http://localhost:3000) |
-| Development inbox | [localhost:8026](http://localhost:8026) |
-| Preview service   | `<session>.localhost:3001`              |
-| MySQL             | `127.0.0.1:3308`                        |
-
-Check `APP_URL` and `MAILPIT_URL` in `.env` if a default port was already occupied. Local preview subdomains resolve to your machine; no external domain is needed.
-
-### Your first review
-
-1. Open the application and enter your name and an email address.
-2. Read the sign-in code in **Mailpit**, the local development inbox. This setup does not deliver mail to the internet.
-3. Create a project from a website URL or PDF. Try the included interactive website or upload the [two-page sample PDF](docs/examples/brand-guidelines.pdf).
-4. Explore the content, switch to commenting, click a detail and publish your feedback.
-5. Copy the sharing link. A reviewer can open it in another browser and sign in with their own email.
-6. Reply and resolve feedback in the conversation panel.
-
-Stop the local stack without removing its data:
+Stop the development stack without removing its data:
 
 ```sh
 docker compose -f compose.yaml -f compose.dev.yaml down
 ```
-
-The repository currently builds its Docker images from source. No published container image is provided.
 
 ## How website review works
 
@@ -132,45 +152,47 @@ The preview service keeps sessions in memory and currently runs as **one instanc
 
 ## Deploy on your server
 
-Use **`compose.yaml`** for production. The development overlay adds Mailpit and access to the private demo host.
+On EasyPanel with an existing database, start with the [application and preview service guide](docs/EASYPANEL.md). The [single-container image](docs/DOCKER.md) and [Compose installation](docs/DEPLOYMENT.md) are alternative deployment modes.
 
 A public deployment needs:
 
 - An HTTPS application domain.
-- A separate registrable domain for previews, with wildcard DNS and TLS.
+- A wildcard HTTPS domain for preview sessions, for example `*.preview.repere.dev` alongside `app.repere.dev`.
 - An SMTP service for sign-in codes.
 - Backups of MySQL, PDF uploads and configuration.
 
-The [deployment guide](docs/DEPLOYMENT.md) covers environment settings, the supplied [Nginx example](docs/nginx.conf), startup, backups and upgrades. Local tests do not validate your future DNS, certificates or SMTP provider.
+These deployment modes need one instance of the current preview service. Keep a single replica and stop the old instance before replacing a container that uses the integrated MySQL volume. Local tests do not validate your future DNS, certificates or SMTP provider.
 
 ## Stack
 
-| Layer           | Technology                                                     |
-| --------------- | -------------------------------------------------------------- |
-| Application     | Next.js 16 App Router, React 19, strict TypeScript             |
-| Database        | MySQL 8.4, Drizzle ORM, versioned SQL migrations               |
-| Languages       | next-intl, English and French                                  |
-| Identity        | Email OTP, Nodemailer, server-side sessions                    |
-| Website preview | Node.js, parse5, native DOM annotation bridge                  |
-| Documents       | PDF.js, private filesystem storage                             |
-| UI              | CSS, Lucide icons, locally bundled fonts                       |
-| Deployment      | Docker Compose, non-root application containers, health checks |
-| Verification    | Vitest, Playwright, real MySQL and Mailpit                     |
+| Layer           | Technology                                                                  |
+| --------------- | --------------------------------------------------------------------------- |
+| Application     | Next.js 16 App Router, React 19, strict TypeScript                          |
+| Database        | MySQL 8.4, Drizzle ORM, versioned SQL migrations                            |
+| Languages       | next-intl, English and French                                               |
+| Identity        | Email OTP, Nodemailer, server-side sessions                                 |
+| Website preview | Node.js, parse5, native DOM annotation bridge                               |
+| Documents       | PDF.js, private filesystem storage                                          |
+| UI              | CSS, Lucide icons, locally bundled fonts                                    |
+| Deployment      | Single Docker image, optional Compose, persistent storage and health checks |
+| Verification    | Vitest, Playwright, real MySQL and Mailpit                                  |
 
 Exact dependency versions are pinned in [package.json](package.json) and [package-lock.json](package-lock.json).
 
 ## Documentation
 
-| Guide                                       | Contents                                                    |
-| ------------------------------------------- | ----------------------------------------------------------- |
-| [Deployment](docs/DEPLOYMENT.md)            | Production domains, SMTP, configuration and maintenance     |
-| [Development and testing](docs/TESTING.md)  | Host development, real integration tests and browser checks |
-| [Preview architecture](docs/PREVIEW.md)     | Transport, cookies, annotation messages and compatibility   |
-| [Backend](docs/BACKEND.md)                  | Identity, permissions, rate limits, persistence and uploads |
-| [API contracts](docs/CONTRACT.md)           | Routes, shared types and preview protocol                   |
-| [Verification record](docs/VERIFICATION.md) | What was actually checked, and the scope of that evidence   |
-| [Security](SECURITY.md)                     | Reporting a vulnerability and deployment boundaries         |
-| [Contributing](CONTRIBUTING.md)             | Workflow, translations, migrations and pull requests        |
+| Guide                                              | Contents                                                        |
+| -------------------------------------------------- | --------------------------------------------------------------- |
+| [EasyPanel with existing MySQL](docs/EASYPANEL.md) | Separate application and preview services, domains and settings |
+| [Docker image](docs/DOCKER.md)                     | One container, integrated or external MySQL, persistent data    |
+| [Deployment](docs/DEPLOYMENT.md)                   | Production domains, SMTP, configuration and maintenance         |
+| [Development and testing](docs/TESTING.md)         | Host development, real integration tests and browser checks     |
+| [Preview architecture](docs/PREVIEW.md)            | Transport, cookies, annotation messages and compatibility       |
+| [Backend](docs/BACKEND.md)                         | Identity, permissions, rate limits, persistence and uploads     |
+| [API contracts](docs/CONTRACT.md)                  | Routes, shared types and preview protocol                       |
+| [Verification record](docs/VERIFICATION.md)        | What was actually checked, and the scope of that evidence       |
+| [Security](SECURITY.md)                            | Reporting a vulnerability and deployment boundaries             |
+| [Contributing](CONTRIBUTING.md)                    | Workflow, translations, migrations and pull requests            |
 
 ## Roadmap
 

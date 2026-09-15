@@ -2,7 +2,13 @@
 
 [Back to the README](../README.md)
 
-Repère ships source-built Docker images and a Compose stack. The local setup uses Mailpit for email; a public instance needs real SMTP and isolated HTTPS domains.
+Choose the deployment mode that matches your infrastructure:
+
+- **EasyPanel with existing MySQL:** [two-service setup](EASYPANEL.md), application on port 3000 and native preview on port 3001.
+- **Single Docker image:** [image guide](DOCKER.md), one gateway on port 8080, persistent `/data`, integrated or external MySQL.
+- **Separate-service Compose:** follow the guide below.
+
+This guide covers the advanced **separate-service Compose stack**. Its local overlay uses Mailpit; a public instance needs real SMTP and isolated HTTPS preview origins.
 
 ## Local setup
 
@@ -27,8 +33,8 @@ Use **`compose.yaml` only** in production. The development overlay adds Mailpit,
 2. Edit `.env` for your actual domains and SMTP service. The following values are examples, not working credentials:
 
    ```dotenv
-   APP_URL=https://reviews.example.com
-   PREVIEW_BASE_URL=https://preview.example.net
+   APP_URL=https://app.repere.dev
+   PREVIEW_BASE_URL=https://repere.dev
    SMTP_HOST=smtp.example.com
    SMTP_PORT=587
    SMTP_USER=your-smtp-user
@@ -38,8 +44,8 @@ Use **`compose.yaml` only** in production. The development overlay adds Mailpit,
    ALLOWED_EMAIL_DOMAINS=your-agency.example
    ```
 
-3. Point `*.preview.example.net` to the server and provision a wildcard certificate. The application and previews must use **different registrable domains**: `example.com` and `example.net` in this example. Different ports or sibling subdomains under one registrable domain are not the production isolation boundary.
-4. Put a TLS reverse proxy in front of the local application and preview ports, normally 3000 and 3001. Preserve the preview's `Host`, WebSocket upgrades and streaming responses. Adapt the supplied [Nginx example](nginx.conf), including certificate paths and any generated port changes. Keep the preview control endpoint private.
+3. Replace these example domains with your own. Point `app.repere.dev` and `*.repere.dev` to the ingress and provision HTTPS, including a wildcard certificate for preview sessions. Each preview has a random 48-character subdomain and a distinct origin; HTTPS app sessions use a host-prefixed cookie. A different registrable domain for previews is also supported. The apex `repere.dev` may point to a separate website: it is not itself a preview session.
+4. Put a TLS reverse proxy in front of the local application and preview ports, normally 3000 and 3001: route the exact app hostname to 3000 and preview session hostnames to 3001. Preserve the preview's `Host`, WebSocket upgrades and streaming responses. Adapt the supplied [Nginx example](nginx.conf), including certificate paths and any generated port changes. Keep the preview control endpoint private.
 5. Start the stack:
 
    ```sh

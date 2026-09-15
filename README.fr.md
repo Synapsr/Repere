@@ -58,9 +58,49 @@ Le code ne comporte ni formules tarifaires ni frais par participant. L'hébergem
 
 ## Démarrer en local
 
-**Prérequis :** Docker avec Compose v2 et Node.js 22.13+. Node.js 24 est recommandé et utilisé dans les images Docker.
+**Vous déployez sur EasyPanel avec une base MySQL existante ?** Suivez le [guide des deux services](docs/EASYPANEL.md#français) : application sur le port 3000, aperçu sur le port 3001 et votre base actuelle. L’image unique ci-dessous reste une autre possibilité.
 
-Clonez le dépôt, puis lancez l'installation :
+L'image `synapsr/repere` réunit l'application, le service d'aperçu natif et **MySQL 8.4 dans un seul conteneur**. Elle génère et conserve ses secrets, initialise la base et applique les migrations automatiquement. Seul Docker est nécessaire sur votre machine.
+
+**La première publication Docker Hub est en attente.** La recette de l'image et le workflow de publication sont prêts ; la commande ci-dessous sera disponible après le premier push réussi. En attendant, [construisez la même image localement](docs/DOCKER.md#build-the-image-from-source).
+
+Créez `.env.docker` avec les paramètres de votre fournisseur SMTP : la connexion nécessite de recevoir un code par email.
+
+```dotenv
+APP_URL=http://localhost:8080
+PREVIEW_BASE_URL=http://localhost:8080
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=replace-me
+SMTP_PASSWORD=replace-me
+SMTP_FROM=Repere <hello@example.com>
+SMTP_SECURE=false
+```
+
+```sh
+docker run -d --name repere --restart unless-stopped \
+  -p 8080:8080 --stop-timeout 40 \
+  -v repere-data:/data \
+  --env-file .env.docker \
+  synapsr/repere:latest
+```
+
+Ouvrez [localhost:8080](http://localhost:8080). Conservez le volume **`/data`** : il contient la base, les PDF et les secrets générés. Utilisez une version publiée précise ou un digest pour des déploiements reproductibles. Une [base MySQL externe](docs/DOCKER.md#external-mysql) reste possible.
+
+Dans **EasyPanel**, choisissez [deux services avec votre MySQL existant](docs/EASYPANEL.md#français), ou déployez [cette image unique sur le port 8080](docs/DOCKER.md#français).
+
+### Votre première relecture
+
+1. Ouvrez l'application et indiquez votre prénom et votre adresse email.
+2. Saisissez le code de connexion reçu dans votre boîte email.
+3. Créez un projet à partir d'une URL ou d'un PDF. Essayez le site interactif inclus ou importez le [PDF d'exemple de deux pages](docs/examples/brand-guidelines.pdf).
+4. Explorez le contenu, passez en mode commentaire, cliquez sur un détail et publiez votre retour.
+5. Copiez le lien de partage. Un autre participant peut l'ouvrir dans son navigateur et s'identifier avec son email.
+6. Répondez et résolvez les retours dans le panneau de conversation.
+
+### Développer depuis les sources
+
+Pour des services séparés, le rechargement à chaud ou une boîte Mailpit locale, utilisez l'installation de développement. Elle demande Docker Compose v2 et Node.js 22.13+ ; Node.js 24 est recommandé.
 
 ```sh
 git clone https://github.com/Synapsr/Repere.git
@@ -68,33 +108,13 @@ cd Repere
 node scripts/setup.mjs
 ```
 
-L'installation crée un `.env` privé avec des secrets aléatoires distincts, choisit des ports disponibles, construit les images, démarre MySQL et applique les migrations versionnées avant de lancer l'application. Les réglages existants et les volumes de données sont conservés.
+Le script construit les services, crée un `.env` ignoré par Git, choisit des ports disponibles et applique les migrations. Par défaut, l'application se trouve sur [localhost:3000](http://localhost:3000), Mailpit sur [localhost:8026](http://localhost:8026) et le service d'aperçu utilise le port 3001. Les emails sont capturés localement. La configuration et les volumes existants sont conservés.
 
-| Service                      | Adresse locale par défaut               |
-| ---------------------------- | --------------------------------------- |
-| Application                  | [localhost:3000](http://localhost:3000) |
-| Boîte email de développement | [localhost:8026](http://localhost:8026) |
-| Service d'aperçu             | `<session>.localhost:3001`              |
-| MySQL                        | `127.0.0.1:3308`                        |
-
-Consultez `APP_URL` et `MAILPIT_URL` dans `.env` si un port était déjà occupé. Les sous-domaines d'aperçu locaux pointent vers votre machine ; aucun domaine externe n'est nécessaire.
-
-### Votre première relecture
-
-1. Ouvrez l'application et indiquez votre prénom et votre adresse email.
-2. Récupérez le code de connexion dans **Mailpit**, la boîte de développement. Cette installation n'envoie aucun email sur Internet.
-3. Créez un projet à partir d'une URL ou d'un PDF. Essayez le site interactif inclus ou importez le [PDF d'exemple de deux pages](docs/examples/brand-guidelines.pdf).
-4. Explorez le contenu, passez en mode commentaire, cliquez sur un détail et publiez votre retour.
-5. Copiez le lien de partage. Un autre participant peut l'ouvrir dans son navigateur et s'identifier avec son email.
-6. Répondez et résolvez les retours dans le panneau de conversation.
-
-Pour arrêter l'installation locale sans supprimer ses données :
+Pour arrêter cette installation sans supprimer ses données :
 
 ```sh
 docker compose -f compose.yaml -f compose.dev.yaml down
 ```
-
-Le dépôt construit actuellement ses images Docker depuis les sources. Aucune image de conteneur publiée n'est fournie.
 
 ## Comment fonctionne la relecture web
 
@@ -132,47 +152,49 @@ Le service d'aperçu conserve ses sessions en mémoire et fonctionne actuellemen
 
 ## Déployer sur votre serveur
 
-Utilisez **`compose.yaml`** en production. Le fichier de développement ajoute Mailpit et l'accès au site de démonstration privé.
+Sur EasyPanel avec une base existante, commencez par le [guide application et aperçu](docs/EASYPANEL.md#français). L’[image unique](docs/DOCKER.md#français) et l’[installation Compose](docs/DEPLOYMENT.md) restent d’autres modes de déploiement.
 
 Un déploiement public demande :
 
 - Un domaine applicatif en HTTPS.
-- Un domaine enregistrable distinct pour les aperçus, avec DNS et certificat wildcard.
+- Un domaine HTTPS wildcard pour les aperçus, par exemple `*.preview.repere.dev` à côté de `app.repere.dev`.
 - Un service SMTP pour les codes de connexion.
 - Des sauvegardes de MySQL, des PDF et de la configuration.
 
-Le [guide de déploiement](docs/DEPLOYMENT.md) décrit les variables, [l'exemple Nginx](docs/nginx.conf), le démarrage, les sauvegardes et les mises à jour. Les tests locaux ne valident pas vos futurs DNS, certificats ou fournisseur SMTP.
+Ces modes de déploiement utilisent une seule instance du service d'aperçu. Gardez une seule réplique et arrêtez l'ancien conteneur avant son remplacement lorsqu'il utilise le volume MySQL intégré. Les tests locaux ne valident pas vos futurs DNS, certificats ou fournisseur SMTP.
 
 ## Stack
 
-| Couche          | Technologie                                                          |
-| --------------- | -------------------------------------------------------------------- |
-| Application     | Next.js 16 App Router, React 19, TypeScript strict                   |
-| Base de données | MySQL 8.4, Drizzle ORM, migrations SQL versionnées                   |
-| Langues         | next-intl, anglais et français                                       |
-| Identité        | OTP email, Nodemailer, sessions côté serveur                         |
-| Aperçu web      | Node.js, parse5, pont d'annotation DOM natif                         |
-| Documents       | PDF.js, stockage privé sur disque                                    |
-| Interface       | CSS, icônes Lucide, polices embarquées                               |
-| Déploiement     | Docker Compose, conteneurs applicatifs sans root, contrôles de santé |
-| Vérification    | Vitest, Playwright, MySQL et Mailpit réels                           |
+| Couche          | Technologie                                                                       |
+| --------------- | --------------------------------------------------------------------------------- |
+| Application     | Next.js 16 App Router, React 19, TypeScript strict                                |
+| Base de données | MySQL 8.4, Drizzle ORM, migrations SQL versionnées                                |
+| Langues         | next-intl, anglais et français                                                    |
+| Identité        | OTP email, Nodemailer, sessions côté serveur                                      |
+| Aperçu web      | Node.js, parse5, pont d'annotation DOM natif                                      |
+| Documents       | PDF.js, stockage privé sur disque                                                 |
+| Interface       | CSS, icônes Lucide, polices embarquées                                            |
+| Déploiement     | Image Docker unique, Compose optionnel, stockage persistant et contrôles de santé |
+| Vérification    | Vitest, Playwright, MySQL et Mailpit réels                                        |
 
 Les versions exactes sont fixées dans [package.json](package.json) et [package-lock.json](package-lock.json).
 
 ## Documentation
 
-Les guides techniques sont en anglais pour faciliter les contributions.
+Les guides Docker et EasyPanel contiennent une section française. Les autres guides techniques sont en anglais pour faciliter les contributions.
 
-| Guide                                                | Contenu                                                      |
-| ---------------------------------------------------- | ------------------------------------------------------------ |
-| [Déploiement](docs/DEPLOYMENT.md)                    | Domaines de production, SMTP, configuration et maintenance   |
-| [Développement et tests](docs/TESTING.md)            | Développement local, tests d'intégration et navigateurs      |
-| [Architecture des aperçus](docs/PREVIEW.md)          | Transport, cookies, messages et compatibilité                |
-| [Backend](docs/BACKEND.md)                           | Identité, droits, limites, persistance et imports            |
-| [Contrats API](docs/CONTRACT.md)                     | Routes, types partagés et protocole d'aperçu                 |
-| [Compte rendu de vérification](docs/VERIFICATION.md) | Contrôles réellement effectués et portée des résultats       |
-| [Sécurité](SECURITY.md)                              | Signalement d'une vulnérabilité et frontières du déploiement |
-| [Contribution](CONTRIBUTING.md)                      | Organisation, traductions, migrations et pull requests       |
+| Guide                                                       | Contenu                                                      |
+| ----------------------------------------------------------- | ------------------------------------------------------------ |
+| [EasyPanel avec MySQL existant](docs/EASYPANEL.md#français) | Application et aperçu séparés, domaines et paramètres        |
+| [Image Docker](docs/DOCKER.md#français)                     | Un conteneur, MySQL intégré ou externe, données persistantes |
+| [Déploiement](docs/DEPLOYMENT.md)                           | Domaines de production, SMTP, configuration et maintenance   |
+| [Développement et tests](docs/TESTING.md)                   | Développement local, tests d'intégration et navigateurs      |
+| [Architecture des aperçus](docs/PREVIEW.md)                 | Transport, cookies, messages et compatibilité                |
+| [Backend](docs/BACKEND.md)                                  | Identité, droits, limites, persistance et imports            |
+| [Contrats API](docs/CONTRACT.md)                            | Routes, types partagés et protocole d'aperçu                 |
+| [Compte rendu de vérification](docs/VERIFICATION.md)        | Contrôles réellement effectués et portée des résultats       |
+| [Sécurité](SECURITY.md)                                     | Signalement d'une vulnérabilité et frontières du déploiement |
+| [Contribution](CONTRIBUTING.md)                             | Organisation, traductions, migrations et pull requests       |
 
 ## Roadmap
 

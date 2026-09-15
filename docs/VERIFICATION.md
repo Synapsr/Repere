@@ -2,6 +2,17 @@
 
 This page records observed checks, not compatibility promises. Test instructions are in [TESTING.md](TESTING.md).
 
+## Production container startup and HTTPS isolation — 15 September 2026
+
+- **128 unit/HTTP tests passed** across 16 files, including the gateway health-check regression test. TypeScript, ESLint and Prettier passed.
+- The all-in-one ARM64 image completed **28 API/browser scenarios in 47.9 seconds** against external MySQL and real SMTP captured by Mailpit, with Chromium and Firefox.
+- **Two additional real-HTTPS browser scenarios passed** in Chromium and Firefox using a local TLS relay and CONNECT proxy. The browser rejected sibling-domain attempts to plant a protected `__Host-` session cookie. Legacy unprefixed cookies were ignored, including one carrying a valid session token. Authenticated sibling-origin mutations returned 403; private responses were unreadable through CORS; the preview could not read the parent document.
+- These HTTPS tests use real transport, not intercepted browser response fulfillment. No public SMTP messages were sent.
+
+The standard application image also started against a fresh external MySQL database, applied one migration creating nine tables, and reapplied startup without duplicating the migration. A real PDF upload returned 201 and the downloaded bytes matched. The uploads directory uses UID 1001 and mode 700; PDF files use mode 600. A SIGTERM stopped the application in 437 milliseconds without forced termination.
+
+These results do not imply that the Docker Hub image has been published or that production wildcard TLS has been configured.
+
 ## Invitation guide and feedback controls — 15 September 2026
 
 The application revision includes automatic OTP submission on paste, native comment cursors and the first-visit invitation guide. The public repository contains the application and its deployment stack.

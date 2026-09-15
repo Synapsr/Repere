@@ -1,0 +1,53 @@
+# syntax=docker/dockerfile:1
+FROM node:24-bookworm-slim AS dependencies
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY package.json package-lock.json ./
+COPY scripts/copy-pdf-worker.mjs ./scripts/copy-pdf-worker.mjs
+RUN --mount=type=cache,id=repere-npm,target=/root/.npm,sharing=locked npm ci --prefer-offline
+
+FROM dependencies AS builder
+COPY . .
+RUN npm run build && node scripts/build-container.mjs
+
+# The official MySQL image supports both amd64 and arm64 and retains its upstream notices.
+FROM mysql:8.4 AS runner
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=8080
+LABEL org.opencontainers.image.title="Repere" \
+      org.opencontainers.image.description="Visual feedback for websites and PDFs, with an optional integrated MySQL database" \
+      org.opencontainers.image.source="https://github.com/Synapsr/Repere" \
+      org.opencontainers.image.licenses="MIT"
+
+# Official Node images install the upstream distribution, not a Debian-linked rebuild.
+# Check its runtime dependencies in the final distribution on each target architecture.
+COPY --from=dependencies /usr/local/bin/node /usr/local/bin/node
+RUN microdnf install -y libatomic libstdc++ && microdnf clean all \
+    && node -e "require('node:crypto').randomBytes(8); require('node:zlib').gzipSync('Repere'); console.log(process.version, process.arch)" \
+    && groupadd --gid 1000 node \
+    && useradd --uid 1000 --gid node --home-dir /home/node --create-home node \
+    && groupadd --gid 1001 preview \
+    && useradd --uid 1001 --gid preview --home-dir /nonexistent --no-create-home --shell /sbin/nologin preview \
+    && groupadd --gid 1002 gateway \
+    && useradd --uid 1002 --gid gateway --home-dir /nonexistent --no-create-home --shell /sbin/nologin gateway \
+    && mkdir -p /data /app/licenses
+
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=node:node /app/.container/runtime/ ./
+COPY --from=builder --chown=node:node /app/.container/preview/ ./preview/
+COPY --from=builder --chown=node:node /app/.container/migrate.mjs ./migrate.mjs
+COPY --from=builder /app/.container/licenses/ ./licenses/
+COPY --from=dependencies /usr/local/LICENSE ./licenses/node.LICENSE.txt
+COPY --chown=node:node drizzle ./drizzle
+COPY docker/all-in-one ./docker/all-in-one
+COPY LICENSE THIRD_PARTY_NOTICES.md ./
+
+VOLUME /data
+EXPOSE 8080
+HEALTHCHECK --interval=15s --timeout=8s --start-period=180s --retries=5 \
+    CMD ["node", "/app/docker/all-in-one/healthcheck.mjs"]
+# The supervisor initializes volume ownership and drops every service to its own user.
+ENTRYPOINT ["node", "/app/docker/all-in-one/runtime.mjs"]
+CMD []

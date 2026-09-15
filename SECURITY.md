@@ -22,7 +22,7 @@ A useful private report includes:
 - A project link plus a verified email permits participation. Treat the sharing link as access to a trusted group, not as a public identifier.
 - Names are self-declared. Email possession is verified, and signed-in participants can see authors' email addresses.
 - `ALLOWED_EMAIL_DOMAINS` restricts project creation, not guest participation.
-- The application and website previews need separate registrable domains in production. The proxy adapts embedding restrictions to enable review; the site's DOM and scripts remain untrusted.
+- The application and website previews use distinct hostnames with HTTPS in production. The application uses a `__Host-` session cookie and exact-Origin mutation checks, including when previews share its parent domain. The proxy adapts embedding restrictions to enable review; the site's DOM and scripts remain untrusted.
 - A preview hostname is a temporary access capability. Keep it out of public logs. The proxy stores the destination, not a shared server-side cookie jar for the website.
 - DNS/IP filtering protects the proxy's outgoing connections. Third-party requests made by the site's scripts remain subject to the reviewer's browser and the site's behavior.
 - Archiving or rotating a link blocks unauthorized new API requests. A previously opened preview can continue until its session expires, at most one hour.

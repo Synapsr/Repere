@@ -4,7 +4,10 @@ import { ApiError } from "./errors";
 export const OTP_TTL_MS = 10 * 60 * 1000;
 export const OTP_MAX_ATTEMPTS = 5;
 export const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
-export const SESSION_COOKIE = "repere_session";
+/** HTTPS cookies cannot be planted or overwritten by a sibling preview hostname. */
+export function sessionCookieName() {
+  return appOrigin().startsWith("https:") ? "__Host-repere_session" : "repere_session";
+}
 
 export function secret(name: "SESSION_SECRET" | "PROXY_SECRET") {
   const value = process.env[name];

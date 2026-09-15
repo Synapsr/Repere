@@ -12,6 +12,7 @@ import {
   requestNetwork,
   safeHashEquals,
   secret,
+  sessionCookieName,
   tokenHash,
 } from "../../src/lib/server/security";
 
@@ -21,6 +22,13 @@ describe("authentication security boundaries", () => {
     vi.stubEnv("APP_URL", "https://review.example.com");
   });
   afterEach(() => vi.unstubAllEnvs());
+
+  it("uses browser-enforced host cookies on HTTPS deployments", () => {
+    vi.stubEnv("APP_URL", "https://app.repere.dev");
+    expect(sessionCookieName()).toBe("__Host-repere_session");
+    vi.stubEnv("APP_URL", "http://localhost:8080");
+    expect(sessionCookieName()).toBe("repere_session");
+  });
 
   it("hashes each OTP against both identity and the server secret", () => {
     const hash = otpHash("alice@example.com", "012345");
