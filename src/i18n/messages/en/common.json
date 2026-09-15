@@ -1,0 +1,17 @@
+{
+  "metadataTitle": "Repère — Feedback, right where it belongs.",
+  "metadataDescription": "Visual feedback for websites and PDFs. Share a link, leave a pin, move projects forward. Open source and self-hosted.",
+  "home": "Repère, home",
+  "loading": "Loading…",
+  "close": "Close",
+  "openSource": "Open source. Your feedback, your server.",
+  "language": "Language",
+  "languageError": "Could not change language. Try again.",
+  "unexpectedError": "Something went wrong. Please try again.",
+  "errorTitle": "Something went wrong.",
+  "errorDescription": "This page could not be loaded.",
+  "retry": "Try again",
+  "notFoundTitle": "This page could not be found.",
+  "notFoundDescription": "The link may have changed. Find your projects from the dashboard.",
+  "backToProjects": "Back to projects"
+}

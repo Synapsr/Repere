@@ -1,0 +1,23 @@
+name: Feature request
+description: Explain a workflow Repère could support better.
+title: "Feature: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: Who encounters it, and what are they trying to accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the smallest useful change and a concrete example.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and context
+      description: Existing workarounds, related roadmap items, or tradeoffs worth considering.

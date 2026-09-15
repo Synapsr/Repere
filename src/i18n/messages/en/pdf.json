@@ -1,0 +1,15 @@
+{
+  "loading": "Loading document…",
+  "loadFailed": "This PDF cannot be displayed. It may be damaged or password protected.",
+  "renderFailed": "Unable to display this page.",
+  "previous": "Previous PDF page",
+  "next": "Next PDF page",
+  "pageNumber": "PDF page number",
+  "page": "Page",
+  "pageCount": "of {count}",
+  "zoomOut": "Zoom out PDF",
+  "zoomIn": "Zoom in PDF",
+  "canvas": "PDF, page {number}",
+  "comment": "Comment {number}",
+  "controls": "PDF controls"
+}

@@ -1,0 +1,17 @@
+{
+  "metadataTitle": "Repère — Les retours, au bon endroit.",
+  "metadataDescription": "Des retours visuels sur vos sites et PDF. Partagez un lien, posez un point et faites avancer vos projets. Open source, chez vous.",
+  "home": "Repère, accueil",
+  "loading": "Chargement…",
+  "close": "Fermer",
+  "openSource": "Open source. Vos retours, chez vous.",
+  "language": "Langue",
+  "languageError": "Impossible de changer de langue. Réessayez.",
+  "unexpectedError": "Une erreur est survenue. Veuillez réessayer.",
+  "errorTitle": "Un petit contretemps.",
+  "errorDescription": "Impossible de charger cette page pour le moment.",
+  "retry": "Réessayer",
+  "notFoundTitle": "Ce repère s’est perdu.",
+  "notFoundDescription": "Le lien a peut-être changé. Retrouvez vos projets depuis l’accueil.",
+  "backToProjects": "Revenir aux projets"
+}

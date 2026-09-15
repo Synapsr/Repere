@@ -1,0 +1,101 @@
+name: repere
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: repere
+      MYSQL_USER: repere
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Run npm run setup or configure .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Run npm run setup or configure .env}
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", 'mysqladmin ping -h 127.0.0.1 -u root -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: mysql://repere:${MYSQL_PASSWORD}@db:3306/repere
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: mysql://repere:${MYSQL_PASSWORD}@db:3306/repere
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      SESSION_SECRET: ${SESSION_SECRET:?Run npm run setup or configure .env}
+      PROXY_SECRET: ${PROXY_SECRET:?Run npm run setup or configure .env}
+      PROXY_INTERNAL_URL: http://preview:3001
+      PREVIEW_BASE_URL: ${PREVIEW_BASE_URL:-http://localhost:3001}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-Repere <hello@example.com>}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      UPLOAD_DIR: /app/uploads
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
+  preview:
+    build:
+      context: .
+      dockerfile: preview/Dockerfile
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${PREVIEW_PORT:-3001}:3001"
+    environment:
+      PORT: 3001
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      PROXY_SECRET: ${PROXY_SECRET:?Run npm run setup or configure .env}
+      PREVIEW_BASE_URL: ${PREVIEW_BASE_URL:-http://localhost:3001}
+      PREVIEW_MAX_SESSIONS: ${PREVIEW_MAX_SESSIONS:-100}
+      PREVIEW_SESSION_TTL_MS: ${PREVIEW_SESSION_TTL_MS:-3600000}
+      PREVIEW_MAX_HTML_BYTES: ${PREVIEW_MAX_HTML_BYTES:-8388608}
+    cap_drop: [ALL]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: 1g
+    cpus: 2
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  database:
+  uploads:

@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+uploads
+data/uploads
+playwright-report
+test-results
+coverage
+*.tsbuildinfo
+.DS_Store
+preview/dist
+public/pdf.worker.min.mjs
+public/licenses
+public/pdfjs

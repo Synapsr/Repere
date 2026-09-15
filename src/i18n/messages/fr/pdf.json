@@ -1,0 +1,15 @@
+{
+  "loading": "Chargement du document…",
+  "loadFailed": "Ce PDF ne peut pas être affiché. Il est peut-être endommagé ou protégé par un mot de passe.",
+  "renderFailed": "Impossible d’afficher cette page.",
+  "previous": "Page PDF précédente",
+  "next": "Page PDF suivante",
+  "pageNumber": "Numéro de page PDF",
+  "page": "Page",
+  "pageCount": "sur {count}",
+  "zoomOut": "Réduire le PDF",
+  "zoomIn": "Agrandir le PDF",
+  "canvas": "PDF, page {number}",
+  "comment": "Retour {number}",
+  "controls": "Commandes du PDF"
+}

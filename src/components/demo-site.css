@@ -1,0 +1,411 @@
+.forma-site {
+  background: #fcfcf6;
+  color: #2b3829;
+  min-height: 100vh;
+  font-family: "DM Sans Variable", sans-serif;
+}
+.forma-nav {
+  padding: 30px 6%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e9dc;
+}
+.forma-logo {
+  font-family: "Manrope Variable", sans-serif;
+  font-size: 33px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1;
+}
+.forma-logo > span {
+  font-size: 10px;
+  letter-spacing: 0;
+  vertical-align: top;
+  margin-left: 3px;
+}
+.forma-nav > div {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  font-size: 10px;
+  color: #879477;
+}
+.forma-contact {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  color: #43583a;
+  border: 1px solid #becdad;
+  border-radius: 3px;
+  padding: 9px 12px;
+}
+.forma-hero {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  padding: 50px 6% 40px;
+  gap: 30px;
+  min-height: 460px;
+}
+.forma-kicker {
+  font-size: 8px;
+  letter-spacing: 1.7px;
+  font-weight: 500;
+  color: #899b72;
+}
+.forma-hero h1 {
+  font-family: Georgia, serif;
+  font-size: clamp(37px, 5.5vw, 72px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -2.5px;
+  margin: 24px 0;
+  color: #35452d;
+}
+.forma-hero h1 em {
+  color: #a1ac78;
+}
+.forma-hero p {
+  font-size: 11px;
+  line-height: 1.9;
+  color: #8b997b;
+  max-width: 270px;
+}
+.forma-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 25px;
+  margin-top: 25px;
+  padding: 12px 17px;
+  background: #3e5734;
+  color: #f4f7ec;
+  border-radius: 3px;
+  font-size: 9px;
+}
+.forma-hero-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 44px 15px 0 0;
+  font-size: 8px;
+  line-height: 1.7;
+  color: #aab39d;
+}
+.forma-hero-foot > span:last-child {
+  font-size: 28px;
+  font-weight: 200;
+  color: #879d70;
+}
+.forma-art {
+  background: #e8ecdc;
+  min-height: 350px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 3px;
+  box-shadow: inset 0 0 80px #9ba27c18;
+}
+.forma-arch {
+  position: absolute;
+  border-radius: 140px 140px 0 0;
+  box-shadow: 17px 20px 30px #57643212;
+}
+.arch-back {
+  width: 53%;
+  height: 68%;
+  background: linear-gradient(95deg, #cfdbc0, #b5c3a0);
+  bottom: 0;
+  left: 7%;
+  transform: rotate(-17deg);
+  transform-origin: bottom;
+}
+.arch-front {
+  width: 41%;
+  height: 65%;
+  background: linear-gradient(95deg, #849970, #667f52);
+  bottom: -3%;
+  right: 4%;
+  transform: rotate(13deg);
+  transform-origin: bottom;
+}
+.forma-sphere {
+  width: 34%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #f3e9d0, #cbbb92);
+  position: absolute;
+  top: 20%;
+  right: 10%;
+  box-shadow: 4px 12px 18px #46533613;
+}
+.forma-cube {
+  position: absolute;
+  bottom: 1%;
+  left: 39%;
+  width: 37%;
+  height: 27%;
+  background: linear-gradient(90deg, #dce2ca, #bfcaa8);
+  transform: rotate(-9deg) skewY(5deg);
+  border-radius: 2px;
+  box-shadow: 6px 10px 25px #44532b12;
+}
+.forma-art-label {
+  position: absolute;
+  bottom: 21px;
+  left: 18px;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: #f1f5e8;
+  line-height: 1.7;
+  z-index: 2;
+}
+.forma-art-star {
+  position: absolute;
+  top: 18px;
+  left: 19px;
+  font-size: 26px;
+  color: #a5b792;
+}
+.forma-band {
+  border-top: 1px solid #e1e7d7;
+  border-bottom: 1px solid #e1e7d7;
+  padding: 20px 6%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: Georgia, serif;
+  font-size: 22px;
+  color: #90a077;
+}
+.forma-band b {
+  font-size: 16px;
+  font-weight: 300;
+  color: #bbc5a9;
+}
+.forma-projects {
+  padding: 48px 6%;
+}
+.forma-section-heading h2,
+.forma-bottom h2 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: 38px;
+  letter-spacing: -1px;
+  margin: 12px 0 20px;
+}
+.forma-tabs {
+  display: flex;
+  gap: 8px;
+}
+.forma-tabs button {
+  background: none;
+  border: 1px solid #dce5cf;
+  color: #9caa8b;
+  padding: 7px 12px;
+  font-size: 9px;
+  border-radius: 3px;
+}
+.forma-tabs button[aria-selected="true"] {
+  background: #e7efdc;
+  color: #78925e;
+}
+.forma-project-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin-top: 22px;
+}
+.forma-project-tile {
+  min-height: 210px;
+  background: #e7ecdd;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 26px;
+}
+.forma-project-tile > span {
+  font-family: Georgia, serif;
+  font-size: 64px;
+  letter-spacing: -4px;
+  color: #96a47d;
+  display: block;
+  text-align: center;
+  margin: auto;
+}
+.forma-project-tile > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 28px;
+  font-size: 9px;
+  color: #6f805a;
+}
+.forma-project-tile b {
+  font-weight: 500;
+}
+.forma-project-tile.second {
+  background: #efe8da;
+}
+.forma-project-tile.second > span {
+  color: #b6a787;
+}
+.forma-project-tile.second i {
+  font-size: 12px;
+  vertical-align: top;
+  margin-left: 3px;
+}
+.forma-bottom {
+  padding: 44px 6%;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 45px;
+  background: #eef2e5;
+  border-top: 1px solid #e0e8d5;
+}
+.forma-bottom form {
+  max-width: 340px;
+}
+.forma-bottom label {
+  font-size: 10px;
+  color: #8fa278;
+}
+.forma-bottom form > div {
+  display: flex;
+  gap: 8px;
+}
+.forma-bottom input {
+  font-size: 11px;
+  background: #f8faf3;
+  border-color: #dce7ce;
+}
+.forma-bottom form button {
+  background: #64854b;
+  border: 0;
+  display: grid;
+  place-items: center;
+  width: 43px;
+  border-radius: 7px;
+  color: white;
+}
+.forma-bottom form p {
+  font-size: 10px;
+  color: #809666;
+  line-height: 1.8;
+  margin-top: 12px;
+  display: flex;
+  gap: 7px;
+}
+.forma-interaction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 17px;
+  border: 1px dashed #c9d6b8;
+  border-radius: 6px;
+  padding: 20px;
+  text-align: center;
+}
+.forma-interaction > span {
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: #9eb18a;
+}
+.forma-interaction button {
+  background: #dce7cb;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 50%;
+  color: #829e67;
+}
+.forma-interaction strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: #7e9468;
+}
+.forma-interaction p {
+  font-size: 9px;
+  color: #a6b596;
+}
+.forma-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 26px 6%;
+  gap: 30px;
+}
+.forma-footer .forma-logo {
+  font-size: 24px;
+}
+.forma-footer p,
+.forma-footer > span {
+  font-size: 7px;
+  color: #a7b298;
+  line-height: 1.7;
+}
+.forma-footer p {
+  max-width: 220px;
+}
+@media (max-width: 650px) {
+  .forma-nav {
+    padding: 22px 6%;
+  }
+  .forma-logo {
+    font-size: 28px;
+  }
+  .forma-nav > div {
+    gap: 18px;
+    font-size: 9px;
+  }
+  .forma-contact {
+    display: none;
+  }
+  .forma-hero {
+    grid-template-columns: 1fr;
+    padding-top: 35px;
+  }
+  .forma-hero h1 {
+    font-size: 52px;
+  }
+  .forma-hero p {
+    max-width: 300px;
+  }
+  .forma-hero-foot {
+    margin-top: 25px;
+  }
+  .forma-art {
+    min-height: 300px;
+  }
+  .forma-band {
+    font-size: 16px;
+    gap: 10px;
+    padding: 19px 5%;
+  }
+  .forma-band span:nth-last-child(2) {
+    display: none;
+  }
+  .forma-band b:last-child {
+    display: none;
+  }
+  .forma-projects {
+    padding-top: 32px;
+  }
+  .forma-project-tiles {
+    grid-template-columns: 1fr;
+    gap: 17px;
+  }
+  .forma-bottom {
+    grid-template-columns: 1fr;
+  }
+  .forma-section-heading h2,
+  .forma-bottom h2 {
+    font-size: 33px;
+  }
+  .forma-footer {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  .forma-footer > span {
+    display: none;
+  }
+}

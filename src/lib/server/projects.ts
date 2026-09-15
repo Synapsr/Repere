@@ -1,0 +1,278 @@
+import { randomUUID } from "node:crypto";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { database, type Transaction } from "@/db";
+import { comments, projects, replies, users } from "@/db/schema";
+import type { Anchor, Feedback, Project, Reply, User } from "../../../shared/types";
+import { ApiError } from "./errors";
+import { appOrigin, ownerEmailAllowed, randomToken } from "./security";
+import { parsePdfUpload, removePdf, storePdf } from "./uploads";
+import { assertAnchorMatchesProject, websiteProjectSchema, readJson } from "./validation";
+import { rateLimit } from "./rate-limit";
+
+type ProjectRow = typeof projects.$inferSelect;
+export function publicProject(row: ProjectRow): Project {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    type: row.type,
+    url: row.url,
+    fileName: row.fileName,
+    shareToken: row.shareToken,
+    ownerId: row.ownerId,
+    archived: row.archived,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    commentCount: row.commentCount,
+    resolvedCount: row.resolvedCount,
+  };
+}
+
+function assertToken(token: string) {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new ApiError(404, "PROJECT_NOT_FOUND");
+}
+export async function projectByToken(token: string, user: User | null) {
+  assertToken(token);
+  const [project] = await database()
+    .select()
+    .from(projects)
+    .where(eq(projects.shareToken, token))
+    .limit(1);
+  if (!project) throw new ApiError(404, "REVIEW_LINK_UNAVAILABLE");
+  if (project.archived && project.ownerId !== user?.id) throw new ApiError(410, "PROJECT_ARCHIVED");
+  return project;
+}
+
+/** Lock project before child rows everywhere, serializing counters and avoiding lock-order deadlocks. */
+async function writableProject(tx: Transaction, token: string) {
+  assertToken(token);
+  const [project] = await tx
+    .select()
+    .from(projects)
+    .where(eq(projects.shareToken, token))
+    .for("update");
+  if (!project) throw new ApiError(404, "REVIEW_LINK_UNAVAILABLE");
+  if (project.archived) throw new ApiError(409, "PROJECT_READ_ONLY");
+  return project;
+}
+
+export async function listProjects(user: User) {
+  const rows = await database()
+    .select()
+    .from(projects)
+    .where(eq(projects.ownerId, user.id))
+    .orderBy(desc(projects.updatedAt));
+  return rows.map(publicProject);
+}
+
+export async function createProject(request: Request, user: User) {
+  if (!ownerEmailAllowed(user.email)) throw new ApiError(403, "OWNER_EMAIL_NOT_ALLOWED");
+  await rateLimit("project-create", user.id, 30, 60 * 60 * 1000);
+  const common = { id: randomUUID(), ownerId: user.id, shareToken: randomToken() };
+  let storageKey: string | undefined;
+  try {
+    if (request.headers.get("content-type")?.startsWith("multipart/form-data")) {
+      const input = await parsePdfUpload(request);
+      storageKey = await storePdf(input.bytes);
+      await database()
+        .insert(projects)
+        .values({
+          ...common,
+          type: "pdf",
+          name: input.name,
+          description: input.description || null,
+          storageKey,
+          fileName: input.fileName,
+          fileSize: input.fileSize,
+        });
+    } else {
+      const input = websiteProjectSchema.parse(await readJson(request));
+      // Local Docker demo URLs must resolve from the isolated preview service container.
+      const source = new URL(input.url);
+      if (
+        process.env.DEMO_SITE_URL &&
+        source.origin === appOrigin() &&
+        (source.pathname === "/demo-site" || source.pathname.startsWith("/demo-site/"))
+      ) {
+        const destination = new URL(process.env.DEMO_SITE_URL);
+        destination.pathname =
+          destination.pathname.replace(/\/$/, "") + source.pathname.slice("/demo-site".length);
+        destination.search = source.search;
+        destination.hash = source.hash;
+        input.url = websiteProjectSchema.shape.url.parse(destination.toString());
+      }
+      await database()
+        .insert(projects)
+        .values({ ...common, ...input, description: input.description || null });
+    }
+  } catch (error) {
+    if (storageKey) await removePdf(storageKey);
+    throw error;
+  }
+  const [project] = await database().select().from(projects).where(eq(projects.id, common.id));
+  return publicProject(project);
+}
+
+export async function updateProject(
+  id: string,
+  user: User,
+  input: {
+    name?: string;
+    description?: string | null;
+    archived?: boolean;
+    rotateShareToken?: true;
+  },
+) {
+  const project = await database().transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, id), eq(projects.ownerId, user.id)))
+      .for("update");
+    if (!row) throw new ApiError(404, "PROJECT_NOT_FOUND");
+    const { rotateShareToken, ...changes } = input;
+    const patch = {
+      ...changes,
+      ...(rotateShareToken ? { shareToken: randomToken() } : {}),
+      updatedAt: new Date(),
+    };
+    await tx.update(projects).set(patch).where(eq(projects.id, id));
+    return { ...row, ...patch };
+  });
+  return publicProject(project);
+}
+
+const authorFields = { id: users.id, email: users.email, name: users.name };
+export async function projectComments(projectId: string, commentId?: string): Promise<Feedback[]> {
+  const rows = await database()
+    .select({ comment: comments, author: authorFields })
+    .from(comments)
+    .innerJoin(users, eq(comments.authorId, users.id))
+    .where(
+      and(eq(comments.projectId, projectId), commentId ? eq(comments.id, commentId) : undefined),
+    )
+    .orderBy(asc(comments.number));
+  if (rows.length === 0) return [];
+  const responseRows = await database()
+    .select({ reply: replies, author: authorFields })
+    .from(replies)
+    .innerJoin(users, eq(replies.authorId, users.id))
+    .where(
+      inArray(
+        replies.commentId,
+        rows.map((row) => row.comment.id),
+      ),
+    )
+    .orderBy(asc(replies.createdAt));
+  const grouped = new Map<string, Reply[]>();
+  for (const { reply, author } of responseRows) {
+    const group = grouped.get(reply.commentId) ?? [];
+    group.push({
+      id: reply.id,
+      body: reply.body,
+      author,
+      createdAt: reply.createdAt.toISOString(),
+    });
+    grouped.set(reply.commentId, group);
+  }
+  return rows.map(({ comment, author }) => ({
+    id: comment.id,
+    number: comment.number,
+    projectId: comment.projectId,
+    body: comment.body,
+    status: comment.status,
+    kind: comment.kind,
+    anchor: comment.anchor,
+    author,
+    replies: grouped.get(comment.id) ?? [],
+    createdAt: comment.createdAt.toISOString(),
+    updatedAt: comment.updatedAt.toISOString(),
+  }));
+}
+
+export async function createComment(
+  token: string,
+  user: User,
+  input: { body: string; anchor: Anchor },
+) {
+  await rateLimit("comment-create", user.id, 60, 60 * 1000);
+  const id = randomUUID();
+  const projectId = await database().transaction(async (tx) => {
+    const project = await writableProject(tx, token);
+    assertAnchorMatchesProject(input.anchor, project);
+    await tx.insert(comments).values({
+      id,
+      projectId: project.id,
+      authorId: user.id,
+      number: project.nextCommentNumber,
+      body: input.body,
+      anchor: input.anchor,
+      kind: "text",
+    });
+    await tx
+      .update(projects)
+      .set({
+        nextCommentNumber: project.nextCommentNumber + 1,
+        commentCount: project.commentCount + 1,
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, project.id));
+    return project.id;
+  });
+  return (await projectComments(projectId, id))[0];
+}
+
+export async function updateComment(
+  token: string,
+  id: string,
+  user: User,
+  status: "open" | "resolved",
+) {
+  await rateLimit("comment-update", user.id, 120, 60 * 1000);
+  const projectId = await database().transaction(async (tx) => {
+    const project = await writableProject(tx, token);
+    const [comment] = await tx
+      .select()
+      .from(comments)
+      .where(and(eq(comments.id, id), eq(comments.projectId, project.id)))
+      .for("update");
+    if (!comment) throw new ApiError(404, "COMMENT_NOT_FOUND");
+    if (project.ownerId !== user.id && comment.authorId !== user.id)
+      throw new ApiError(403, "COMMENT_STATUS_FORBIDDEN");
+    if (comment.status !== status) {
+      await tx.update(comments).set({ status, updatedAt: new Date() }).where(eq(comments.id, id));
+      await tx
+        .update(projects)
+        .set({
+          resolvedCount: project.resolvedCount + (status === "resolved" ? 1 : -1),
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, project.id));
+    }
+    return project.id;
+  });
+  return (await projectComments(projectId, id))[0];
+}
+
+export async function createReply(
+  token: string,
+  commentId: string,
+  user: User,
+  body: string,
+): Promise<Reply> {
+  await rateLimit("reply-create", user.id, 60, 60 * 1000);
+  const id = randomUUID();
+  const createdAt = new Date();
+  await database().transaction(async (tx) => {
+    const project = await writableProject(tx, token);
+    const [comment] = await tx
+      .select({ id: comments.id })
+      .from(comments)
+      .where(and(eq(comments.id, commentId), eq(comments.projectId, project.id)));
+    if (!comment) throw new ApiError(404, "COMMENT_NOT_FOUND");
+    await tx.insert(replies).values({ id, commentId, authorId: user.id, body, createdAt });
+    await tx.update(comments).set({ updatedAt: createdAt }).where(eq(comments.id, commentId));
+    await tx.update(projects).set({ updatedAt: createdAt }).where(eq(projects.id, project.id));
+  });
+  return { id, body, author: user, createdAt: createdAt.toISOString() };
+}

@@ -1,0 +1,36 @@
+# Local development only: mail is captured, and the demo site is reachable by the native preview proxy.
+services:
+  db:
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3308}:3306"
+
+  app:
+    environment:
+      DEMO_SITE_URL: http://app:3000/demo-site
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+      SMTP_SECURE: "false"
+    depends_on:
+      mailpit:
+        condition: service_started
+
+  preview:
+    environment:
+      PREVIEW_ALLOWED_PRIVATE_HOSTS: app
+
+  mailpit:
+    image: axllent/mailpit:v1.29
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8026}:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1026}:1025"
+    environment:
+      MP_MAX_MESSAGES: 1000
+      MP_DATABASE: /data/mailpit.db
+    volumes:
+      - mailpit:/data
+
+volumes:
+  mailpit:

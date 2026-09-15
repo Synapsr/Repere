@@ -1,0 +1,307 @@
+.modal:has(.review-onboarding) {
+  width: min(460px, calc(100vw - 28px));
+}
+.modal:has(.review-onboarding) .modal-content {
+  padding: 25px;
+}
+.modal:has(.review-onboarding) .modal-heading {
+  margin-bottom: 9px;
+  gap: 14px;
+}
+.modal:has(.review-onboarding) .modal-heading h2 {
+  font-size: 21px;
+  line-height: 1.35;
+  letter-spacing: -0.6px;
+}
+.review-onboarding-intro {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.review-onboarding-demo {
+  margin: 20px 0 23px;
+  border: 1px solid #e0e6f5;
+  border-radius: 11px;
+  background: #f5f7ff;
+  height: 161px;
+  overflow: hidden;
+  position: relative;
+}
+.review-onboarding-toolbar {
+  height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: white;
+  border-bottom: 1px solid #e7ebf5;
+}
+.review-onboarding-toolbar > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 91px;
+  padding: 6px 9px;
+  border-radius: 5px;
+  font-size: 10px;
+  color: #667087;
+  font-weight: 550;
+}
+.review-onboarding-toolbar > .review-onboarding-browse {
+  background: #edf1ff;
+  color: #3657e8;
+}
+.review-onboarding-page {
+  position: absolute;
+  inset: 60px 24px 17px;
+  border: 1px solid #e3e8f5;
+  background: white;
+  border-radius: 6px;
+  padding: 16px;
+}
+.review-onboarding-page > span {
+  display: block;
+  height: 5px;
+  width: 30%;
+  background: #e1e7f7;
+  border-radius: 4px;
+  margin-bottom: 7px;
+}
+.review-onboarding-page > span:first-child {
+  width: 41%;
+  height: 8px;
+  background: #c4d0f4;
+  margin-bottom: 11px;
+}
+.review-onboarding-page > span:nth-child(3) {
+  width: 22%;
+}
+.review-onboarding-page > i {
+  position: absolute;
+  width: 33%;
+  top: 13px;
+  bottom: 13px;
+  right: 15px;
+  border-radius: 4px;
+  background: #eef2ff;
+}
+.review-onboarding-pin {
+  position: absolute;
+  top: 82px;
+  left: 49%;
+  z-index: 2;
+  width: 26px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 2px solid white;
+  border-radius: 13px 13px 13px 2px;
+  color: white;
+  background: #3657e8;
+  font-size: 10px;
+  box-shadow: 0 2px 7px #3657e82b;
+}
+.review-onboarding-bubble {
+  position: absolute;
+  top: 106px;
+  left: calc(49% + 15px);
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  width: 106px;
+  padding: 9px;
+  border: 1px solid #d9e2fc;
+  background: white;
+  border-radius: 7px;
+  color: #3657e8;
+  box-shadow: 0 4px 10px #3657e80e;
+}
+.review-onboarding-bubble > i {
+  width: 57px;
+  height: 4px;
+  border-radius: 3px;
+  background: #dce4fa;
+}
+.review-onboarding-bubble > i:last-child {
+  width: 40px;
+  margin-left: 18px;
+}
+.review-onboarding-pointer {
+  position: absolute;
+  z-index: 4;
+  left: 36%;
+  top: 24px;
+  color: #3657e8;
+  fill: white;
+  stroke-width: 1.6;
+  filter: drop-shadow(0 2px 2px #20233118);
+}
+.review-onboarding-steps {
+  padding: 0;
+  margin: 0 0 23px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.review-onboarding-steps li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: start;
+  gap: 10px;
+}
+.review-onboarding-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #e0e6f6;
+  border-radius: 50%;
+  font-size: 10px;
+  color: #3657e8;
+  background: #f6f8ff;
+  margin-top: 1px;
+}
+.review-onboarding-steps strong {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+  font-weight: 650;
+}
+.review-onboarding-steps p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.review-onboarding-start {
+  display: flex;
+  width: 100%;
+  min-height: 41px;
+  font-size: 13px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .review-onboarding-browse {
+    animation: review-onboarding-browse 7.2s infinite;
+  }
+  .review-onboarding-comment {
+    animation: review-onboarding-comment 7.2s infinite;
+  }
+  .review-onboarding-pin,
+  .review-onboarding-bubble {
+    animation: review-onboarding-point 7.2s infinite;
+  }
+  .review-onboarding-pointer {
+    animation: review-onboarding-cursor 7.2s infinite;
+  }
+  @keyframes review-onboarding-browse {
+    0%,
+    25%,
+    84%,
+    100% {
+      color: #3657e8;
+      background: #edf1ff;
+    }
+    33%,
+    76% {
+      color: #667087;
+      background: transparent;
+    }
+  }
+  @keyframes review-onboarding-comment {
+    0%,
+    25%,
+    84%,
+    100% {
+      color: #667087;
+      background: transparent;
+    }
+    33%,
+    76% {
+      color: #3657e8;
+      background: #edf1ff;
+    }
+  }
+  @keyframes review-onboarding-point {
+    0%,
+    42%,
+    93%,
+    100% {
+      opacity: 0;
+      transform: translateY(5px) scale(0.9);
+    }
+    51%,
+    86% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  @keyframes review-onboarding-cursor {
+    0%,
+    17%,
+    91%,
+    100% {
+      left: 36%;
+      top: 25px;
+      transform: scale(1);
+    }
+    29%,
+    35% {
+      left: 61%;
+      top: 25px;
+      transform: scale(0.9);
+    }
+    47%,
+    66% {
+      left: 52%;
+      top: 96px;
+      transform: scale(1);
+    }
+    81%,
+    86% {
+      left: 36%;
+      top: 25px;
+      transform: scale(0.9);
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .review-onboarding-pointer {
+    display: none;
+  }
+  .review-onboarding-toolbar > .review-onboarding-browse {
+    background: transparent;
+    color: #667087;
+  }
+  .review-onboarding-toolbar > .review-onboarding-comment {
+    background: #edf1ff;
+    color: #3657e8;
+  }
+}
+@media (max-width: 420px) {
+  .modal:has(.review-onboarding) .modal-content {
+    padding: 21px;
+  }
+  .modal:has(.review-onboarding) .modal-heading h2 {
+    font-size: 19px;
+  }
+  .review-onboarding-demo {
+    margin-block: 16px 20px;
+  }
+  .review-onboarding-bubble {
+    width: 91px;
+  }
+  .review-onboarding-bubble > i {
+    width: 40px;
+  }
+  .review-onboarding-bubble > i:last-child {
+    width: 28px;
+  }
+  .review-onboarding-steps {
+    gap: 13px;
+  }
+}

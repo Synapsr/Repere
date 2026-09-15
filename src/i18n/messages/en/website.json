@@ -1,0 +1,18 @@
+{
+  "loading": "Opening website…",
+  "retryTitle": "The preview is unavailable",
+  "retry": "Try again",
+  "timeout": "The website stopped responding. Try again or open it in a new tab.",
+  "openFailed": "Unable to open this website.",
+  "otherSite": "This address belongs to another website. Create a project to review it.",
+  "invalidAddress": "Enter a valid address for this website.",
+  "back": "Previous page",
+  "forward": "Next page",
+  "reload": "Reload website",
+  "address": "Page address",
+  "go": "Go to page",
+  "openExternal": "Open website in a new tab",
+  "frame": "Website under review",
+  "dismiss": "Dismiss message",
+  "navigation": "Website navigation"
+}

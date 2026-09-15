@@ -1,0 +1,34 @@
+name: Website compatibility
+description: Report a difference between a site and its Repère preview.
+title: "Compatibility: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A preview changes the site's origin, which can affect authentication and third-party integrations. A reproducible public fixture helps distinguish a proxy issue from a site's own restrictions. Never post credentials or temporary preview/share URLs.
+  - type: input
+    id: website
+    attributes:
+      label: Public URL or minimal fixture
+      description: Supply only a URL you may share. If the site is private, describe how to reproduce with synthetic content.
+    validations:
+      required: true
+  - type: textarea
+    id: interaction
+    attributes:
+      label: Affected interaction
+      description: What works on the original site and differs in the preview? Include exact steps and whether the issue occurs in browse or comment mode.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Browser and deployment
+      description: Repère commit, browser/version, local HTTP or production HTTPS, and any relevant integration such as OAuth or a third-party API.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted evidence
+      description: Relevant console/network errors or screenshots. Do not include cookies, codes, tokens or private documents.

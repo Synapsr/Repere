@@ -1,0 +1,11 @@
+node_modules
+.next
+package-lock.json
+public/pdf.worker.min.mjs
+public/licenses
+public/pdfjs
+playwright-report
+test-results
+drizzle/meta
+preview/dist
+.env

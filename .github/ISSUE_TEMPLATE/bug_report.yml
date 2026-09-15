@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible problem in Repère.
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a security vulnerability, follow SECURITY.md instead of posting a public reproduction. Remove email codes, session cookies, sharing tokens and private content from attachments.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the action, actual result and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Use a minimal example or a synthetic PDF. Include only URLs you are allowed to share publicly.
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Version or commit
+      placeholder: Commit hash or release, if available
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser/version, operating system, selected language, and Docker or host-development setup.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or screenshots
+      description: Add relevant redacted console or container logs and screenshots, if available.

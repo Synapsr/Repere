@@ -1,0 +1,18 @@
+{
+  "loading": "Ouverture du site…",
+  "retryTitle": "L’aperçu est indisponible",
+  "retry": "Réessayer",
+  "timeout": "Le site ne répond plus. Réessayez ou ouvrez-le dans un nouvel onglet.",
+  "openFailed": "Impossible d’ouvrir ce site.",
+  "otherSite": "Cette adresse appartient à un autre site. Créez un projet pour la relire.",
+  "invalidAddress": "Indiquez une adresse valide pour ce site.",
+  "back": "Page précédente",
+  "forward": "Page suivante",
+  "reload": "Actualiser le site",
+  "address": "Adresse de la page",
+  "go": "Ouvrir la page",
+  "openExternal": "Ouvrir le site dans un nouvel onglet",
+  "frame": "Site en relecture",
+  "dismiss": "Masquer le message",
+  "navigation": "Navigation du site"
+}

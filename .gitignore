@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+uploads/
+data/uploads/
+*.tsbuildinfo
+playwright-report/
+test-results/
+.DS_Store
+coverage/
+preview/dist/
+public/pdf.worker.min.mjs
+public/licenses/
+public/pdfjs/
