@@ -5,9 +5,9 @@ This file records user-visible changes. Container version `0.3.0` is available o
 ## 0.4.0 — 2026-09-16
 
 - Capture the visible website state when placing a point, before typing or publishing. PDF points capture the currently rendered page.
-- Keep a private screenshot with each new comment, with a positioned marker and an expandable thumbnail. Cancelled drafts do not upload images.
+- Keep a private screenshot with each new comment, with a positioned marker and a discreet icon in the comment header to open it. Drafts have no screenshot controls or status; cancelled drafts do not upload images.
 - Save comments and screenshot metadata together. Validate and re-encode JPEGs, limit uploads, and protect image access with the same login and review-link rules as feedback.
-- Show an explicit option to publish without an image if capture fails. Existing comments remain readable without screenshots.
+- Capture quietly in the background and publish without an image if capture fails. Existing comments remain readable without screenshots.
 
 **Upgrade:** back up MySQL and uploads, then deploy both the app and preview service. Startup applies the additive screenshot migration. No new environment variables are needed; images are stored under `UPLOAD_DIR/captures`.
 

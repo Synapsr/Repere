@@ -178,10 +178,10 @@ test("website and PDF points keep their original pixels and open a positioned la
       .toBe(true);
     const cancelledCapture = await page.evaluate(() => (window as ProbeWindow).captureProbe.held!);
     await replayCapture(page, site.locator("body"), cancelledCapture.captureId, null);
-    await page.getByLabel("Votre commentaire").fill("A renderer failure must be explicit.");
-    await expect(
-      page.getByRole("button", { name: "Publier sans capture", exact: true }),
-    ).toBeEnabled();
+    await page
+      .getByLabel("Votre commentaire")
+      .fill("A missing capture must not interrupt writing.");
+    await expect(page.getByRole("button", { name: "Publier", exact: true })).toBeEnabled();
     await expect(page.locator(".new-feedback").getByRole("img")).toHaveCount(0);
     await page.getByRole("button", { name: "Annuler le commentaire", exact: true }).click();
     await page.evaluate(() => {
@@ -216,28 +216,14 @@ test("website and PDF points keep their original pixels and open a positioned la
       pointX: 0.99,
       pointY: 0.99,
     });
-    await expect(page.getByText("Capture en cours…", { exact: true })).toBeVisible();
+    await expect(
+      page.locator(".new-feedback").getByText("Capture en cours…", { exact: true }),
+    ).toHaveCount(0);
     await expect(page.locator(".new-feedback").getByRole("img")).toHaveCount(0);
-    await page.evaluate(() => {
-      (window as ProbeWindow).captureProbe.hold = false;
-    });
-    await replayCapture(
-      page,
-      site.locator("body"),
-      currentCapture.captureId,
-      currentCapture.capture,
-    );
-    await decodedImage(
-      page.locator(".new-feedback").getByRole("img", { name: "Capture du point", exact: true }),
-    );
     // Change the actual page before publishing: the saved image must describe the click, not submit time.
     await probe.evaluate((element) => {
       (element as HTMLElement).style.backgroundColor = "rgb(220,40,60)";
     });
-    const draftImage = page
-      .locator(".new-feedback")
-      .getByRole("img", { name: "Capture du point", exact: true });
-    const originalDraftImage = await draftImage.getAttribute("src");
     const liveDraft = site.locator("repere-annotations .draft");
     const originalDraftPoint = await liveDraft.evaluate((element) => ({
       left: (element as HTMLElement).style.left,
@@ -252,6 +238,7 @@ test("website and PDF points keep their original pixels and open a positioned la
       failPost = resolve;
     });
     const holdPost = async (request: Route) => {
+      expect(request.request().postDataJSON().capture.dataUrl).toBe(currentCapture.capture.dataUrl);
       receivedPost();
       await postReleased;
       await request.fulfill({
@@ -271,6 +258,23 @@ test("website and PDF points keep their original pixels and open a positioned la
       .getByLabel("Votre commentaire")
       .fill("Keep the green state from the point placement.");
     await page.getByRole("button", { name: "Publier", exact: true }).click();
+    await expect(page.getByLabel("Votre commentaire")).toBeDisabled();
+    await expect(page.locator(".new-feedback").getByRole("img")).toHaveCount(0);
+    await expect(
+      page.locator(".new-feedback").getByText("Capture en cours…", { exact: true }),
+    ).toHaveCount(0);
+    // Publishing waits for the current capture without exposing capture UI or
+    // accepting the old response replayed above.
+    expect(commentPosts).toBe(0);
+    await page.evaluate(() => {
+      (window as ProbeWindow).captureProbe.hold = false;
+    });
+    await replayCapture(
+      page,
+      site.locator("body"),
+      currentCapture.captureId,
+      currentCapture.capture,
+    );
     await postReceived;
     await expect(
       page.getByRole("button", { name: "Annuler le commentaire", exact: true }),
@@ -295,7 +299,7 @@ test("website and PDF points keep their original pixels and open a positioned la
         })),
       )
       .toEqual(originalDraftPoint);
-    await expect(draftImage).toHaveAttribute("src", originalDraftImage!);
+    await expect(page.locator(".new-feedback").getByRole("img")).toHaveCount(0);
     failPost();
     expect((await failed).status()).toBe(503);
     await page.unroute(matchComment, holdPost);
@@ -303,7 +307,7 @@ test("website and PDF points keep their original pixels and open a positioned la
     await expect(page.getByLabel("Votre commentaire")).toHaveValue(
       "Keep the green state from the point placement.",
     );
-    await expect(draftImage).toHaveAttribute("src", originalDraftImage!);
+    await expect(page.locator(".new-feedback").getByRole("img")).toHaveCount(0);
     expect(((await (await api.get(route)).json()) as ReviewData).comments).toEqual([]);
     const comment = await publish(
       page,
@@ -327,17 +331,22 @@ test("website and PDF points keep their original pixels and open a positioned la
     expect(await (await api.get(screenshotUrl)).body()).toEqual(original);
     await page.reload();
     const card = page.locator(".feedback-card").filter({ hasText: comment.body });
-    const thumbnailButton = card.getByRole("button", { name: "Voir la capture", exact: true });
-    const thumbnail = thumbnailButton.getByRole("img", { name: "Capture du point", exact: true });
-    await decodedImage(thumbnail);
-    const small = await thumbnail.boundingBox();
-    await thumbnailButton.click();
+    const captureButton = card.getByRole("button", { name: "Voir la capture", exact: true });
+    await expect(card.getByRole("img")).toHaveCount(0);
+    await expect(
+      card.locator(".feedback-card-heading").getByRole("button", { name: "Voir la capture" }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: testInfo.outputPath("comment-capture-icon.png"),
+      animations: "disabled",
+    });
+    await captureButton.click();
     const dialog = page.getByRole("dialog", { name: "Capture du point", exact: true });
     await decodedImage(dialog.getByRole("img", { name: "Capture du point", exact: true }));
     const large = await dialog
       .getByRole("img", { name: "Capture du point", exact: true })
       .boundingBox();
-    expect(large!.width).toBeGreaterThan(small!.width * 1.5);
+    expect(large!.width).toBeGreaterThan(400);
     const pin = dialog.locator(".capture-pin");
     await expect(pin).toBeVisible();
     const pinPosition = await pin.evaluate((element) => ({
@@ -354,6 +363,27 @@ test("website and PDF points keep their original pixels and open a positioned la
     });
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
+
+    // An unavailable capture stays unobtrusive and does not block publishing.
+    const withoutImage = await createWebsite(api, "Capture unavailable");
+    await page.goto(`/r/${withoutImage.shareToken}`);
+    await expect(site.locator('.forma-site[data-hydrated="true"]')).toBeVisible();
+    await page.getByRole("button", { name: "Commenter", exact: true }).click();
+    await site.locator("h1").click();
+    await expect
+      .poll(() => page.evaluate(() => (window as ProbeWindow).captureProbe.held !== null))
+      .toBe(true);
+    const missingCapture = await page.evaluate(() => (window as ProbeWindow).captureProbe.held!);
+    await replayCapture(page, site.locator("body"), missingCapture.captureId, null);
+    const textOnly = await publish(
+      page,
+      withoutImage.shareToken,
+      "This comment still publishes normally.",
+    );
+    expect(textOnly.screenshot).toBeNull();
+    await expect(
+      page.locator(".feedback-card").getByRole("button", { name: "Voir la capture" }),
+    ).toHaveCount(0);
 
     const uploaded = await api.post("/api/projects", {
       multipart: {
@@ -373,9 +403,7 @@ test("website and PDF points keep their original pixels and open a positioned la
     await projectOptions(page, false);
     await page.getByRole("button", { name: "Commenter", exact: true }).click();
     await page.getByLabel("PDF, page 2", { exact: true }).click({ position: { x: 180, y: 160 } });
-    await decodedImage(
-      page.locator(".new-feedback").getByRole("img", { name: "Capture du point", exact: true }),
-    );
+    await expect(page.locator(".new-feedback").getByRole("img")).toHaveCount(0);
     const pdfComment = await publish(
       page,
       pdf.shareToken,

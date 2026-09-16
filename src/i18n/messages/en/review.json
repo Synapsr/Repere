@@ -87,8 +87,5 @@
   "moveProject": "Move project",
   "captureTitle": "Point screenshot",
   "captureView": "View screenshot",
-  "capturePending": "Capturing…",
-  "captureFailed": "The screenshot failed. You can publish this feedback without an image.",
-  "captureUnavailable": "This screenshot is unavailable.",
-  "publishWithoutCapture": "Publish without screenshot"
+  "captureUnavailable": "This screenshot is unavailable."
 }

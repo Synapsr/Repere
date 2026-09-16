@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { MessageCircle, Maximize2 } from "lucide-react";
-import { Modal } from "./ui";
+import { MessageCircle, ImageIcon } from "lucide-react";
+import { ErrorBanner, Modal } from "./ui";
 
 export function CommentCapture({
   src,
@@ -21,7 +21,7 @@ export function CommentCapture({
   function content() {
     return (
       <span className="capture-image">
-        {/* Authenticated, private images and in-memory drafts bypass image optimization. */}
+        {/* Authenticated private images bypass image optimization. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={src} alt={t("captureTitle")} onError={() => setFailed(true)} />
         <span
@@ -34,23 +34,24 @@ export function CommentCapture({
       </span>
     );
   }
-  if (failed) return <p className="capture-notice">{t("captureUnavailable")}</p>;
   return (
     <>
       <button
-        className="capture-thumbnail"
+        className="icon-button capture-button"
         type="button"
         aria-label={t("captureView")}
+        title={t("captureView")}
         onClick={() => setExpanded(true)}
       >
-        {content()}
-        <span className="capture-expand" aria-hidden="true">
-          <Maximize2 size={14} />
-        </span>
+        <ImageIcon size={16} />
       </button>
       {expanded && (
         <Modal wide title={t("captureTitle")} onClose={() => setExpanded(false)}>
-          <div className="capture-expanded">{content()}</div>
+          {failed ? (
+            <ErrorBanner message={t("captureUnavailable")} />
+          ) : (
+            <div className="capture-expanded">{content()}</div>
+          )}
         </Modal>
       )}
     </>

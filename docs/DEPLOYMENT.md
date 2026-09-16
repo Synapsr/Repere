@@ -137,3 +137,12 @@ Review [SECURITY.md](../SECURITY.md) and the [compatibility boundaries](PREVIEW.
 ### Workspace invitation upgrade (0.3.0)
 
 The invitation release adds one MySQL table and uses the existing SMTP configuration. No new environment variables or preview-service changes are required. Back up the database before upgrading and let the standard startup migrator finish. Existing spaces, members, projects and sharing links are preserved. Invitations sent by the app require the recipient to sign in with the invited email and accept before joining.
+
+### Point screenshot upgrade (0.4.0)
+
+Back up MySQL and the uploads volume, then deploy the **app and preview services**
+from the same release. The app's normal startup applies `0003_comment_screenshots`.
+Existing comments remain readable without images. No new environment variables are
+required: private JPEG files live in `UPLOAD_DIR/captures`, on the existing uploads
+volume. Include this directory in file backups alongside PDFs. The all-in-one image
+already contains both updated services.

@@ -87,8 +87,5 @@
   "moveProject": "Déplacer le projet",
   "captureTitle": "Capture du point",
   "captureView": "Voir la capture",
-  "capturePending": "Capture en cours…",
-  "captureFailed": "La capture a échoué. Vous pouvez publier ce retour sans image.",
-  "captureUnavailable": "Cette capture n’est pas disponible.",
-  "publishWithoutCapture": "Publier sans capture"
+  "captureUnavailable": "Cette capture n’est pas disponible."
 }

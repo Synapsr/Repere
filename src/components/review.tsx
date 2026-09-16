@@ -51,10 +51,10 @@ const PdfViewer = dynamic(() => import("./pdf-viewer").then((m) => m.PdfViewer),
   loading: PdfLoading,
 });
 
-type DraftCapture =
-  | { status: "pending"; id: string }
-  | { status: "ready"; id: string; value: CaptureInput }
-  | { status: "failed"; id: string | null };
+type DraftCapture = {
+  result: Promise<CaptureInput | null>;
+  resolve: (value: CaptureInput | null) => void;
+};
 
 export function Review({ token }: { token: string }) {
   const t = useTranslations("review");
@@ -65,7 +65,7 @@ export function Review({ token }: { token: string }) {
   const [focus, setFocus] = useState<Feedback | null>(null);
   const [filter, setFilter] = useState<"open" | "resolved" | "all">("open");
   const [pendingAnchor, setPendingAnchor] = useState<Anchor | null>(null);
-  const [capture, setCapture] = useState<DraftCapture | null>(null);
+  const capture = useRef<DraftCapture | null>(null);
   const captureId = useRef<string | null>(null);
   const captureTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submitting = useRef(false);
@@ -74,11 +74,14 @@ export function Review({ token }: { token: string }) {
     if (captureTimer.current) clearTimeout(captureTimer.current);
     captureTimer.current = null;
     setPendingAnchor(null);
-    setCapture(null);
+    capture.current?.resolve(null);
+    capture.current = null;
   }, []);
   useEffect(
     () => () => {
       captureId.current = null;
+      capture.current?.resolve(null);
+      capture.current = null;
       if (captureTimer.current) clearTimeout(captureTimer.current);
     },
     [],
@@ -150,25 +153,21 @@ export function Review({ token }: { token: string }) {
   }, []);
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (
-      submitting.current ||
-      data?.project.archived ||
-      !pendingAnchor ||
-      !body.trim() ||
-      !capture ||
-      capture.status === "pending"
-    )
-      return;
+    if (submitting.current || data?.project.archived || !pendingAnchor || !body.trim()) return;
     submitting.current = true;
     setBusy(true);
     setError("");
+    const draftCapture = capture.current;
     try {
+      const image = await draftCapture?.result;
+      // A cancelled or archived draft must not publish after its capture settles.
+      if (capture.current !== draftCapture) return;
       const { comment } = await api<{ comment: Feedback }>(`/api/reviews/${token}/comments`, {
         method: "POST",
         body: JSON.stringify({
           body: body.trim(),
           anchor: pendingAnchor,
-          ...(capture.status === "ready" ? { capture: capture.value } : {}),
+          ...(image ? { capture: image } : {}),
         }),
       });
       // The POST committed both records. A later refresh failure must not leave a
@@ -220,13 +219,19 @@ export function Review({ token }: { token: string }) {
     captureId.current = null;
     if (captureTimer.current) clearTimeout(captureTimer.current);
     captureTimer.current = null;
-    setCapture(value ? { status: "ready", id, value } : { status: "failed", id });
+    capture.current?.resolve(value);
   }
   function anchor(value: Anchor, id: string | null) {
     if (data?.project.archived || submitting.current) return false;
     if (captureTimer.current) clearTimeout(captureTimer.current);
     captureId.current = id;
-    setCapture(id ? { status: "pending", id } : { status: "failed", id });
+    capture.current?.resolve(null);
+    let resolve!: DraftCapture["resolve"];
+    const result = new Promise<CaptureInput | null>((complete) => {
+      resolve = complete;
+    });
+    capture.current = { result, resolve };
+    if (!id) resolve(null);
     if (id) captureTimer.current = setTimeout(() => receivedCapture(id, null), 15_000);
     setPendingAnchor(value);
     setShowSidebar(true);
@@ -522,39 +527,20 @@ export function Review({ token }: { token: string }) {
                   placeholder={t("commentPlaceholder")}
                   value={body}
                   maxLength={10000}
+                  disabled={busy}
                   onChange={(e) => setBody(e.target.value)}
                   rows={4}
                   autoFocus
                   required
                 />
-                {capture?.status === "pending" && (
-                  <div className="capture-notice" role="status">
-                    <Spinner label={t("capturePending")} />
-                  </div>
-                )}
-                {capture?.status === "failed" && (
-                  <p className="capture-notice" role="status">
-                    {t("captureFailed")}
-                  </p>
-                )}
-                {capture?.status === "ready" && (
-                  <CommentCapture
-                    src={capture.value.dataUrl}
-                    pointX={capture.value.pointX}
-                    pointY={capture.value.pointY}
-                  />
-                )}
                 <div className="new-feedback-footer">
                   <Avatar name={data.user.name} size="small" />
-                  <button
-                    className="button primary"
-                    disabled={busy || !body.trim() || !capture || capture.status === "pending"}
-                  >
+                  <button className="button primary" disabled={busy || !body.trim()}>
                     {busy ? (
                       <Spinner label={t("sending")} />
                     ) : (
                       <>
-                        {t(capture?.status === "failed" ? "publishWithoutCapture" : "publish")}
+                        {t("publish")}
                         <Send size={14} />
                       </>
                     )}
@@ -708,30 +694,32 @@ function FeedbackCard({
           <span className="feedback-author-name">{comment.author.name}</span>
           <ArrowUpRight size={13} />
         </button>
-        {canResolve && (
-          <button
-            className={`resolve-button ${comment.status === "resolved" ? "resolved" : ""}`}
-            aria-label={t(comment.status === "resolved" ? "reopenComment" : "resolveComment", {
-              number: comment.number,
-            })}
-            title={t(comment.status === "resolved" ? "reopen" : "resolve")}
-            onClick={onStatus}
-          >
-            {comment.status === "resolved" ? <CheckCircle2 size={19} /> : <Circle size={19} />}
-          </button>
-        )}
+        <div className="feedback-card-actions">
+          {comment.screenshot && (
+            <CommentCapture
+              src={`/api/reviews/${token}/comments/${comment.id}/screenshot`}
+              pointX={comment.screenshot.pointX}
+              pointY={comment.screenshot.pointY}
+              number={comment.number}
+            />
+          )}{" "}
+          {canResolve && (
+            <button
+              className={`resolve-button ${comment.status === "resolved" ? "resolved" : ""}`}
+              aria-label={t(comment.status === "resolved" ? "reopenComment" : "resolveComment", {
+                number: comment.number,
+              })}
+              title={t(comment.status === "resolved" ? "reopen" : "resolve")}
+              onClick={onStatus}
+            >
+              {comment.status === "resolved" ? <CheckCircle2 size={19} /> : <Circle size={19} />}
+            </button>
+          )}
+        </div>
       </div>
       <button className="feedback-content" onClick={onSelect}>
         <span className="feedback-text">{comment.body}</span>
       </button>
-      {comment.screenshot && (
-        <CommentCapture
-          src={`/api/reviews/${token}/comments/${comment.id}/screenshot`}
-          pointX={comment.screenshot.pointX}
-          pointY={comment.screenshot.pointY}
-          number={comment.number}
-        />
-      )}
       <div className="feedback-card-meta">
         <time dateTime={comment.createdAt}>{relativeDate(comment.createdAt, locale)}</time>
         <button className="reply-expand" onClick={onSelect}>

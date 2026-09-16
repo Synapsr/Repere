@@ -105,7 +105,7 @@ unchanged comment counters after rejected uploads. They use synthetic local acco
 Chromium and Firefox tests place a point on a green element, change it to red before
 publishing, and inspect the stored JPEG pixels to prove the original state was retained.
 They check cancelled drafts, scrolling, navigation interactions, reload, marker placement
-and the expanded view. A two-page PDF with distinct page colors proves that the current
+and the icon-triggered expanded view. Drafts contain no image or capture status; publishing waits for capture completion. A two-page PDF with distinct page colors proves that the current
 rendered page is captured. Capture helper tests cover immediate cloning, timeouts and
 abandoned work. These fixtures do not establish pixel-perfect support for all external
 websites, cross-origin media or CSS effects.
