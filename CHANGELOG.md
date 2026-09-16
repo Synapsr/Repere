@@ -1,8 +1,14 @@
 # Changelog
 
-This file records user-visible changes. Container version `0.3.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
+This file records user-visible changes. Container version `0.4.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
 ## 0.4.0 — 2026-09-16
+
+Published from [`819b8b0`](https://github.com/Synapsr/Repere/commit/819b8b04a4e753d558e6e858c7b7deb780aa79a8). Tags `0.4.0`, `0.4` and `latest` identify this AMD64/ARM64 index:
+
+```text
+sha256:6ac1206ee6dcb4c4d439b06fbb2c5a558fb3b903d5105e4b2535bcfb9b541620
+```
 
 - Capture the visible website state when placing a point, before typing or publishing. PDF points capture the currently rendered page.
 - Keep a private screenshot with each new comment, with a positioned marker and a discreet icon in the comment header to open it. Drafts have no screenshot controls or status; cancelled drafts do not upload images.
@@ -15,7 +21,7 @@ This file records user-visible changes. Container version `0.3.0` is available o
 
 ## 0.3.0 — 2026-09-16
 
-Published from [`f655468`](https://github.com/Synapsr/Repere/commit/f655468e73e61b6049345f97a91e1d3f54e1868b). Tags `0.3.0`, `0.3` and `latest` identify this AMD64/ARM64 index:
+Published from [`f655468`](https://github.com/Synapsr/Repere/commit/f655468e73e61b6049345f97a91e1d3f54e1868b). Tags `0.3.0` and `0.3` retain this AMD64/ARM64 index:
 
 ```text
 sha256:073725dcd8d0e65003c11b3745604b2b3eb6f9d17f63c0c551200525606bc51c
@@ -32,7 +38,7 @@ sha256:073725dcd8d0e65003c11b3745604b2b3eb6f9d17f63c0c551200525606bc51c
 
 ## 0.2.0 — 2026-09-16
 
-Published from [`7bf4877`](https://github.com/Synapsr/Repere/commit/7bf48770902cbb99e678e097105dc74413b7b32f). Tags `0.2.0` and `0.2` retain this AMD64/ARM64 index; `latest` now identifies 0.3.0:
+Published from [`7bf4877`](https://github.com/Synapsr/Repere/commit/7bf48770902cbb99e678e097105dc74413b7b32f). Tags `0.2.0` and `0.2` retain this AMD64/ARM64 index; `latest` now identifies 0.4.0:
 
 ```text
 sha256:84650557d9c9322500bc47e48dd0c3e4cd5828468535953e1cec22d22f3f333c
@@ -49,7 +55,7 @@ sha256:84650557d9c9322500bc47e48dd0c3e4cd5828468535953e1cec22d22f3f333c
 
 ## 0.1.1 — 2026-09-15
 
-The published image was built from [`8e15dded`](https://github.com/Synapsr/Repere/commit/8e15dded1c922333839022e27c1838e3154a261f). Tags `0.1.1` and `0.1` retain this AMD64/ARM64 index; `latest` now points to 0.3.0:
+The published image was built from [`8e15dded`](https://github.com/Synapsr/Repere/commit/8e15dded1c922333839022e27c1838e3154a261f). Tags `0.1.1` and `0.1` retain this AMD64/ARM64 index; `latest` now points to 0.4.0:
 
 ```text
 sha256:4701bf47e44a7ec46bc4d0e54940f9d9a51b26f9297193a9eb341740900f8e42
@@ -61,7 +67,7 @@ sha256:4701bf47e44a7ec46bc4d0e54940f9d9a51b26f9297193a9eb341740900f8e42
 
 ## 0.1.0 — 2026-09-15
 
-The published image was built from [`ef36f020`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). The immutable `0.1.0` tag retains this AMD64/ARM64 index; the `0.1` alias now points to 0.1.1 and `latest` to 0.3.0:
+The published image was built from [`ef36f020`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). The immutable `0.1.0` tag retains this AMD64/ARM64 index; the `0.1` alias now points to 0.1.1 and `latest` to 0.4.0:
 
 ```text
 sha256:860000ef8c3ce45f40aff05aacf33935eec7fc4bf4cae1fb83152e83558221fa

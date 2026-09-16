@@ -2,6 +2,35 @@
 
 This page records observed checks, not compatibility promises. Test instructions are in [TESTING.md](TESTING.md).
 
+## Point screenshots 0.4.0 — 16 September 2026
+
+Source revision [`819b8b0`](https://github.com/Synapsr/Repere/commit/819b8b04a4e753d558e6e858c7b7deb780aa79a8) passed [CI run 35085906735](https://github.com/Synapsr/Repere/actions/runs/35085906735). Local checks and final CI cover:
+
+- **166 unit and HTTP tests** pass. TypeScript, ESLint, formatting and dependency audit pass (zero reported vulnerabilities).
+- **45 integration scenarios** pass: 11 API, 17 Chromium and 17 Firefox. The two opt-in HTTPS checks are skipped. The screenshot scenario was rerun after correcting an ambiguous test selector and adding the slow-submit regression; the other browser scenarios passed in the complete run.
+- Real screenshot pixels stay green after the page turns red before publishing. Stored bytes survive page reload, scrolling and site interactions. The second page of a two-color PDF remains blue in its saved image.
+- Cancelled drafts create no comment. Capture runs quietly, with no draft image or status. An icon in the published comment opens the image; publishing waits for an ongoing capture and still works if capture fails. Late results cannot overwrite a new draft. A second point placed during a delayed, failed POST cannot move the retained draft's marker.
+- API tests verify private image access, invalid/rotated links, archived guest restrictions, JPEG decoding, dimensions and upload limits, and unchanged counters on rejected uploads.
+- Filesystem and transaction tests verify private permissions, rejection of symlinks, cleanup on transaction failure and retention after a committed write.
+- Fresh MySQL installation, upgrades from 0.1.1, 0.2.0 and 0.3.0, interrupted DDL and repeat startup preserve existing data. Screenshot foreign keys and fractional/timestamp metadata are checked.
+- Expanded website and PDF screenshot views were visually inspected. Synthetic test identities use local Mailpit only; no production emails were sent for these checks.
+
+An additional real-browser fixture in Chromium and Firefox captured a 900 × 700 viewport after scrolling 620 pixels. Immediate parent resizing to 600 × 500, DOM/input/canvas changes and scrolling after the point did not alter the captured image or its point coordinates. The renderer's temporary iframe is isolated from the reviewed website's global iframe CSS.
+
+Website captures reconstruct the live DOM; conic gradients, clipping/backdrop effects, nested frames and cross-origin media are not guaranteed to match. PDFs copy their existing canvas. These results establish the tested behaviors, not universal pixel-perfect website capture.
+
+### Docker publication and application deployment
+
+Tags `synapsr/repere:0.4.0`, `0.4` and `latest` identify the verified public AMD64/ARM64 index:
+
+```text
+sha256:6ac1206ee6dcb4c4d439b06fbb2c5a558fb3b903d5105e4b2535bcfb9b541620
+```
+
+Both architectures started with integrated MySQL (13 tables, 4 migrations), validated real Sharp JPEG writes and private reads through the API, and retained the same screenshot bytes after stopping and restarting their volumes. The published runtime manifests and configurations match the tested images. Anonymous registry checks confirm the tags, source revision, SLSA provenance, SPDX SBOM and preservation of the 0.1–0.3 tags. Native image-library license inventories are present in both images.
+
+The production app and preview service were deployed from the same source revision after a successful database backup. Startup migrations completed, the application health endpoint returned 200, and unauthenticated screenshot access returned 401. No production test email was sent. These checks do not claim a production restore or a new authenticated production browser session.
+
 ## Workspace invitations 0.3.0 — 16 September 2026
 
 Source revision [`f655468`](https://github.com/Synapsr/Repere/commit/f655468e73e61b6049345f97a91e1d3f54e1868b) passed [CI run 35080406117](https://github.com/Synapsr/Repere/actions/runs/35080406117). Local checks and final CI cover:
