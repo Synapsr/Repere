@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({ render: vi.fn(), encode: vi.fn() }));
 vi.mock("html2canvas-pro", () => ({ default: mocks.render }));
 vi.mock("../../shared/capture-canvas", () => ({ encodeCapture: mocks.encode }));
 
-import { captureViewport } from "../../preview/capture";
+import { captureInitialCover, captureViewport } from "../../preview/capture";
 
 const capturedAt = "2026-09-16T10:00:00.000Z";
 const capture: CaptureInput = {
@@ -20,8 +20,18 @@ describe("native viewport capture", () => {
     vi.useFakeTimers();
     mocks.render.mockReset();
     mocks.encode.mockReset().mockResolvedValue(capture);
-    vi.stubGlobal("window", { innerWidth: 1_200, innerHeight: 800, scrollX: 0, scrollY: 620 });
+    vi.stubGlobal(
+      "window",
+      Object.assign(new EventTarget(), {
+        innerWidth: 1_200,
+        innerHeight: 800,
+        scrollX: 0,
+        scrollY: 620,
+      }),
+    );
     vi.stubGlobal("document", {
+      readyState: "complete",
+      fonts: { ready: Promise.resolve() },
       documentElement: { append: vi.fn() },
       createElement: () => ({
         style: { setProperty: vi.fn() },
@@ -117,5 +127,43 @@ describe("native viewport capture", () => {
     expect(options.ignoreElements(element("style", true))).toBe(true);
     expect(options.ignoreElements(element("style"))).toBe(false);
     expect(options.ignoreElements(element("canvas"))).toBe(false);
+  });
+
+  it("waits briefly for initial assets before taking a single cover", async () => {
+    mocks.render.mockResolvedValue({});
+    const pending = captureInitialCover(new AbortController().signal);
+    await vi.advanceTimersByTimeAsync(299);
+    expect(mocks.render).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await pending).toEqual(capture);
+    expect(mocks.render).toHaveBeenCalledOnce();
+    expect(mocks.encode).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ pointX: 0.5, pointY: 0.5 }),
+    );
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("bounds asset waiting when load or font readiness never completes", async () => {
+    Object.assign(document, { readyState: "loading", fonts: { ready: new Promise(() => {}) } });
+    mocks.render.mockResolvedValue({});
+    const pending = captureInitialCover(new AbortController().signal);
+    await vi.advanceTimersByTimeAsync(2_299);
+    expect(mocks.render).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await pending).toEqual(capture);
+    expect(mocks.render).toHaveBeenCalledOnce();
+  });
+
+  it("never snapshots after an interaction cancels a waiting cover", async () => {
+    const controller = new AbortController();
+    const pending = captureInitialCover(controller.signal);
+    await vi.advanceTimersByTimeAsync(100);
+    controller.abort();
+    expect(await pending).toBeNull();
+    await vi.advanceTimersByTimeAsync(20_000);
+    window.dispatchEvent(new Event("load"));
+    expect(mocks.render).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

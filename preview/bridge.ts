@@ -2,7 +2,7 @@ import type { PreviewCommand, PreviewConfig, PreviewPin } from "../shared/previe
 import type { WebsiteAnchor } from "../shared/types";
 import { previewLocale, previewMessage, previewPinLabel, type PreviewMessageKey } from "./messages";
 import { ADD_COMMENT_CURSOR, COMMENT_CURSOR } from "./cursor";
-import { captureViewport } from "./capture";
+import { captureInitialCover, captureViewport } from "./capture";
 import { newCaptureId } from "../shared/capture-canvas";
 
 // This file is independently authored. It runs inside the isolated preview document,
@@ -102,7 +102,9 @@ function initialize(config: PreviewConfig) {
   for (const key of ["pushState", "replaceState"] as const) {
     const native = history[key].bind(history);
     history[key] = (data, unused, url) => {
+      const previous = originalUrl();
       native(data, unused, url == null ? url : toProxy(String(url)));
+      if (originalUrl() !== previous) cancelCover();
       reportLocation();
       schedule();
     };
@@ -187,6 +189,37 @@ function initialize(config: PreviewConfig) {
   let lastUrl = originalUrl();
   let hovered: Element | null = null;
   let activeCapture: AbortController | null = null;
+  let coverEligible = true;
+  let coverAttempted = false;
+  let coverRequest: { id: string; controller: AbortController } | null = null;
+
+  function cancelCover() {
+    coverEligible = false;
+    coverRequest?.controller.abort();
+  }
+  function requestCover(requestId: string) {
+    if (coverAttempted || !/^[a-zA-Z0-9-]{1,64}$/.test(requestId)) return;
+    coverAttempted = true;
+    const controller = new AbortController();
+    coverRequest = { id: requestId, controller };
+    const capture =
+      coverEligible && mode === "browse" && !draft && !activeCapture && !config.servicePage
+        ? captureInitialCover(controller.signal)
+        : Promise.resolve(null);
+    void capture.then((value) => {
+      if (coverRequest?.id === requestId) coverRequest = null;
+      parent.postMessage(
+        {
+          source: "repere-preview",
+          channel: config.channel,
+          type: "cover",
+          requestId,
+          capture: controller.signal.aborted ? null : value,
+        },
+        config.appOrigin,
+      );
+    });
+  }
   const pinElements = new Map<string, HTMLButtonElement>();
   const focusKey = `repere-focus:${config.channel}`;
   const cursorStyle = document.createElement("style");
@@ -390,6 +423,7 @@ function initialize(config: PreviewConfig) {
         break;
       case "mode":
         if (message.mode === "browse" || message.mode === "comment") {
+          if (message.mode === "comment") cancelCover();
           mode = message.mode;
           if (mode === "browse") {
             draft = null;
@@ -407,13 +441,22 @@ function initialize(config: PreviewConfig) {
         }
         break;
       case "focus":
+        cancelCover();
         if (message.anchor?.type === "website") focusAnchor(message.anchor);
         break;
       case "draft":
+        if (message.anchor) cancelCover();
         draft = message.anchor;
         schedule();
         break;
+      case "cover":
+        if (typeof message.requestId === "string") requestCover(message.requestId);
+        break;
+      case "cover-cancel":
+        if (coverRequest && message.requestId === coverRequest.id) cancelCover();
+        break;
       case "navigate":
+        cancelCover();
         try {
           const target = new URL(message.url);
           if (target.origin === config.targetOrigin) location.assign(toProxy(target.href));
@@ -422,12 +465,15 @@ function initialize(config: PreviewConfig) {
         }
         break;
       case "back":
+        cancelCover();
         history.back();
         break;
       case "forward":
+        cancelCover();
         history.forward();
         break;
       case "reload":
+        cancelCover();
         location.reload();
         break;
     }
@@ -444,6 +490,7 @@ function initialize(config: PreviewConfig) {
   window.addEventListener(
     "pointerdown",
     (event) => {
+      cancelCover();
       if (mode === "comment" && !(host && event.composedPath().includes(host))) {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -458,6 +505,7 @@ function initialize(config: PreviewConfig) {
       const element = event.target instanceof Element ? event.target : null;
       if (!element) return;
       if (mode === "comment") {
+        cancelCover();
         event.preventDefault();
         event.stopImmediatePropagation();
         const capturedAt = new Date().toISOString();
@@ -522,6 +570,7 @@ function initialize(config: PreviewConfig) {
   window.addEventListener(
     "keydown",
     (event) => {
+      cancelCover();
       if (event.key === "Escape" && mode === "comment") {
         draft = null;
         hovered = null;
@@ -530,14 +579,28 @@ function initialize(config: PreviewConfig) {
     },
     true,
   );
-  window.addEventListener("scroll", schedule, { capture: true, passive: true });
+  window.addEventListener(
+    "scroll",
+    () => {
+      cancelCover();
+      schedule();
+    },
+    { capture: true, passive: true },
+  );
+  window.addEventListener("wheel", cancelCover, { passive: true });
+  window.addEventListener("input", cancelCover, { capture: true, passive: true });
   window.addEventListener("resize", schedule, { passive: true });
-  window.addEventListener("pagehide", () => activeCapture?.abort());
+  window.addEventListener("pagehide", () => {
+    cancelCover();
+    activeCapture?.abort();
+  });
   window.addEventListener("popstate", () => {
+    cancelCover();
     reportLocation();
     schedule();
   });
   window.addEventListener("hashchange", () => {
+    cancelCover();
     reportLocation();
     schedule();
   });

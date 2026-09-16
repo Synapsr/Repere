@@ -977,6 +977,16 @@ a svg {
   background: #e1e3eb;
   overflow: hidden;
 }
+.project-cover-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+  outline-offset: -1px;
+}
 .preview-color-1 {
   background: #f0eadd;
 }
@@ -2154,6 +2164,26 @@ a svg {
   margin-bottom: 14px;
 }
 .settings-section .button {
+  font-size: 11px;
+}
+.project-preview.cover-settings-preview {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 8 / 5;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.cover-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cover-settings-actions .button {
+  min-height: 40px;
+}
+.settings-section .cover-settings-hint {
+  margin: 8px 0 0;
   font-size: 11px;
 }
 .pdf-viewer {

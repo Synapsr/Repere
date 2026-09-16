@@ -27,12 +27,14 @@ export type PreviewCommand = { source: "repere"; channel: string } & (
   | { type: "navigate"; url: string }
   | { type: "focus"; anchor: WebsiteAnchor }
   | { type: "draft"; anchor: WebsiteAnchor | null }
+  | { type: "cover" | "cover-cancel"; requestId: string }
   | { type: "pins"; pins: PreviewPin[]; selected: string | null }
 );
 export type PreviewEvent = { source: "repere-preview"; channel: string } & (
   | { type: "ready" | "location"; url: string; title: string }
   | { type: "anchor"; anchor: WebsiteAnchor; captureId?: string }
   | { type: "capture"; captureId: string; capture: CaptureInput | null }
+  | { type: "cover"; requestId: string; capture: CaptureInput | null }
   | { type: "select"; id: string }
   | { type: "error"; message: string }
 );

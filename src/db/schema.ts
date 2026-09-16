@@ -151,6 +151,15 @@ export const projects = mysqlTable(
   ],
 );
 
+export const projectCovers = mysqlTable("project_covers", {
+  projectId: id()
+    .primaryKey()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  automaticStorageKey: varchar({ length: 80 }),
+  customStorageKey: varchar({ length: 80 }),
+  version: id().notNull(),
+});
+
 export const comments = mysqlTable(
   "comments",
   {

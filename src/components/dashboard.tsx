@@ -34,6 +34,7 @@ import type { Project, User, Workspace } from "../../shared/types";
 import { api, relativeDate } from "@/lib/client";
 import { Logo, Avatar, Modal, Spinner, ErrorBanner, OpenSourceFooter } from "./ui";
 import { WorkspaceSwitcher } from "./workspace-switcher";
+import { ProjectCover } from "./project-cover";
 
 export function CreateProject({
   workspaceId,
@@ -512,38 +513,7 @@ function WorkspaceDashboard({
                       {project.type === "website" ? <Globe size={12} /> : <FileText size={12} />}
                       {project.type === "website" ? t("websiteBadge") : t("pdf")}
                     </span>
-                    {project.type === "website" ? (
-                      <div className="mini-website">
-                        <div className="mini-nav">
-                          <span />
-                          <i />
-                          <i />
-                          <i />
-                        </div>
-                        <div className="mini-web-body">
-                          <div>
-                            <b>{project.name.split(/[—–-]/)[0]}</b>
-                            <i />
-                            <i />
-                            <span />
-                          </div>
-                          <div className="mini-web-visual">
-                            <span />
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mini-document">
-                        <div className="mini-doc-top" />
-                        <strong>{project.name}</strong>
-                        <i />
-                        <i />
-                        <i />
-                        <div />
-                        <i />
-                        <i />
-                      </div>
-                    )}
+                    <ProjectCover project={project} />
                     <span className="preview-open">
                       <ArrowUpRight size={21} />
                     </span>

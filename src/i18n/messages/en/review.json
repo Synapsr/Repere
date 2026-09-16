@@ -93,5 +93,12 @@
   "promptCopied": "Prompt copied",
   "promptFailed": "Could not prepare the prompt.",
   "promptTitle": "Copy prompt",
-  "promptManual": "Automatic copying is unavailable. The text is selected: press ⌘C or Ctrl+C to copy it."
+  "promptManual": "Automatic copying is unavailable. The text is selected: press ⌘C or Ctrl+C to copy it.",
+  "coverTitle": "Cover",
+  "coverChange": "Change image",
+  "coverReset": "Use automatic preview",
+  "coverHint": "PNG, JPG or WebP · up to 10 MB.",
+  "coverAutomaticHint": "The preview is created when you open the project. You can also upload an image (PNG, JPG or WebP, up to 10 MB).",
+  "coverTooLarge": "Choose an image up to 10 MB.",
+  "coverInvalid": "Choose a PNG, JPG or WebP image."
 }

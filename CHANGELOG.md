@@ -2,6 +2,15 @@
 
 This file records user-visible changes. Historical image digests refer to their publication date; `latest` follows the newest release. Container version `0.5.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
+## 0.6.0 — 2026-09-16
+
+- Project cards display a private cover captured automatically when a workspace member first opens the website or the first page of a PDF. Capture runs in the existing browser preview, without an external API or a headless-browser service.
+- Project settings accept a custom PNG, JPEG or WebP image up to 10 MiB. Members can restore the retained automatic image; delayed captures never overwrite a custom cover.
+- Images are decoded, resized and re-encoded locally, stripped of metadata and stored in the private upload volume. Cover files and metadata are inaccessible to review-link guests.
+- Automatic capture gives priority to navigation and commenting. Existing projects keep their placeholder until a successful first capture; unsupported websites can use an uploaded image.
+
+**Upgrade:** deploy the app and preview service. Startup applies the additive `0004_project_covers` migration. Keep the existing upload volume; no new environment variable is needed.
+
 ## 0.5.0 — 2026-09-16
 
 Published from [`cae2e6d`](https://github.com/Synapsr/Repere/commit/cae2e6dd68654a139f3da0c651b71a0837ab8f49). Tags `0.5.0`, `0.5` and `latest` identify this AMD64/ARM64 index:

@@ -157,10 +157,11 @@ export function websiteAnchor(url = websiteURL()): WebsiteAnchor {
 }
 
 /** Small genuine two-page PDF, generated in memory with valid cross-reference offsets. */
-export function pdfFixture() {
-  const stream = (text: string) => `BT /F1 28 Tf 55 710 Td (${text}) Tj ET`;
-  const first = stream("Repere - Page 1");
-  const second = stream("Repere - Page 2");
+export function pdfFixture(backgrounds?: [string, string]) {
+  const stream = (text: string, background?: string) =>
+    `${background ? `${background} rg 0 0 595 842 re f 0 0 0 rg ` : ""}BT /F1 28 Tf 55 710 Td (${text}) Tj ET`;
+  const first = stream("Repere - Page 1", backgrounds?.[0]);
+  const second = stream("Repere - Page 2", backgrounds?.[1]);
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",

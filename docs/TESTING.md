@@ -120,3 +120,17 @@ revoked membership and selected-text fallback. Only the operating-system clipboa
 is stubbed, so tests do not replace the user's actual clipboard. Email uses local
 Mailpit and synthetic identities, with two additional OTPs for API and four for the
 combined Chromium/Firefox group (21 and 24 sends per complete isolated suite).
+
+## Project covers
+
+The cover API scenario uses real MySQL, local Mailpit and two synthetic identities.
+It covers automatic/custom precedence, replacement, restoration, private reads,
+invalid images, CSRF, archiving, revoked membership and project transfers. Browser
+journeys capture the real website preview and the first page of a two-color PDF,
+upload a custom image, restore the original bytes and check desktop/mobile cards.
+The preview bridge also has isolated real-browser checks for cancellation and
+comment-capture priority; image decoding, storage cleanup and transaction failures
+have focused unit tests.
+
+The complete API and browser suites now request 23 and 26 OTPs respectively. Keep
+their MySQL/Mailpit stacks separate so normal authentication limits remain active.

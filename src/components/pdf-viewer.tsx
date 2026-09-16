@@ -13,6 +13,7 @@ export function PdfViewer({
   comments,
   onAnchor,
   onCapture,
+  onCover,
   selected,
   onSelect,
   focus,
@@ -23,6 +24,7 @@ export function PdfViewer({
   comments: Feedback[];
   onAnchor: (a: PdfAnchor, captureId: string | null) => void;
   onCapture: (captureId: string, capture: CaptureInput | null) => void;
+  onCover?: (capture: CaptureInput) => void;
   selected: string | null;
   onSelect: (id: string) => void;
   focus: Feedback | null;
@@ -46,7 +48,22 @@ export function PdfViewer({
     completed.zoom === zoom;
   const rendering = !error && !ready;
   const canvas = useRef<HTMLCanvasElement>(null);
+  const loadedToken = useRef<string | null>(null);
   const documentPage = useRef<HTMLDivElement>(null);
+  const coverCallback = useRef(onCover);
+  const coverAttempted = useRef<string | null>(null);
+  const coverRequest = useRef<object | null>(null);
+  const coverEnabled = !!onCover;
+  useEffect(() => {
+    coverCallback.current = onCover;
+    if (!onCover) coverRequest.current = null;
+  }, [onCover]);
+  useEffect(
+    () => () => {
+      coverRequest.current = null;
+    },
+    [token],
+  );
   const [size, setSize] = useState({ width: 680, height: 880 });
   useEffect(() => {
     let active = true;
@@ -70,7 +87,10 @@ export function PdfViewer({
           void task.destroy();
         };
         const document = await task.promise;
-        if (active) setPdf(document);
+        if (active) {
+          loadedToken.current = token;
+          setPdf(document);
+        }
       } catch {
         if (active) {
           setError("loadFailed");
@@ -132,6 +152,34 @@ export function PdfViewer({
       });
     }
   }, [focus]);
+  useEffect(() => {
+    if (
+      !coverEnabled ||
+      !ready ||
+      loadedToken.current !== token ||
+      coverAttempted.current === token
+    )
+      return;
+    coverAttempted.current = token;
+    if (pageNumber !== 1 || !canvas.current) return;
+    const request = {};
+    coverRequest.current = request;
+    // encodeCapture copies immediately, before a page/zoom change can reuse this bitmap.
+    void encodeCapture(canvas.current, {
+      pointX: 0.5,
+      pointY: 0.5,
+      capturedAt: new Date().toISOString(),
+    }).then(
+      (capture) => {
+        if (coverRequest.current !== request) return;
+        coverRequest.current = null;
+        coverCallback.current?.(capture);
+      },
+      () => {
+        if (coverRequest.current === request) coverRequest.current = null;
+      },
+    );
+  }, [coverEnabled, ready, pageNumber, token]);
   useEffect(() => {
     if (!ready || focus?.anchor.type !== "pdf" || focus.anchor.page !== pageNumber) return;
     documentPage.current

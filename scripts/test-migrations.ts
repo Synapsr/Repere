@@ -343,7 +343,16 @@ async function main() {
       migrationJournalBefore,
       "The interrupted screenshot fixture must have no completed migration journal entry",
     );
-    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    // Stop at the released screenshot schema before testing the cover upgrade.
+    await writeFile(
+      path.join(temporary, "meta/_journal.json"),
+      JSON.stringify({ ...journal, entries: journal.entries.slice(0, 4) }),
+    );
+    await writeFile(
+      path.join(temporary, `${screenshotMigration.tag}.sql`),
+      await readFile(`drizzle/${screenshotMigration.tag}.sql`),
+    );
+    await migrate(drizzle({ client: connection }), { migrationsFolder: temporary });
     for (const [table, expected] of beforeScreenshots)
       assert.deepEqual(
         await rows(`SELECT * FROM ${table}`),
@@ -389,7 +398,7 @@ async function main() {
       await connection.rollback();
     }
     for (const statement of screenshotSql) await connection.query(statement);
-    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    await migrate(drizzle({ client: connection }), { migrationsFolder: temporary });
     assert.deepEqual(
       await rows("SELECT * FROM comment_screenshots ORDER BY commentId"),
       screenshots,
@@ -398,11 +407,73 @@ async function main() {
       assert.deepEqual(await rows(`SELECT * FROM ${table}`), expected);
     assert.equal(
       (await rows("SELECT * FROM __drizzle_migrations")).length,
-      journal.entries.length,
+      4,
       "Replay must record each migration once",
     );
     console.info(
       "PASS: upgrade from 0.3.0 preserves all existing data and invitations; interrupted screenshot migration resumes with metadata intact, unique comment binding and enforced cascading foreign key.",
+    );
+
+    const beforeCovers = new Map<string, RowDataPacket[]>();
+    for (const table of [...existingTables, "workspace_invitations", "comment_screenshots"])
+      beforeCovers.set(table, await rows(`SELECT * FROM ${table}`));
+    assert.ok(
+      !(await rows("SHOW TABLES")).some((row) => Object.values(row)[0] === "project_covers"),
+      "The released screenshot checkpoint must not apply project covers early",
+    );
+    const coverMigration = journal.entries[4];
+    assert.equal(coverMigration?.tag, "0004_project_covers");
+    const coverSql = (await readFile(`drizzle/${coverMigration.tag}.sql`, "utf8"))
+      .split("--> statement-breakpoint")
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+    assert.equal(coverSql.length, 1, "The cover table and FK must be one atomic DDL statement");
+    const beforeCoverJournal = await rows("SELECT * FROM __drizzle_migrations ORDER BY id");
+    for (const statement of coverSql) await connection.query(statement);
+    const insertCover =
+      "INSERT INTO project_covers (projectId,automaticStorageKey,customStorageKey,version) VALUES (?,?,?,?)";
+    const coverValues = [website, `${randomUUID()}.jpg`, null, randomUUID()];
+    await connection.execute(insertCover, coverValues);
+    await connection.execute(insertCover, [
+      pdf,
+      `${randomUUID()}.jpg`,
+      `${randomUUID()}.jpg`,
+      randomUUID(),
+    ]);
+    const covers = await rows("SELECT * FROM project_covers ORDER BY projectId");
+    assert.deepEqual(
+      await rows("SELECT * FROM __drizzle_migrations ORDER BY id"),
+      beforeCoverJournal,
+    );
+    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    for (const statement of coverSql) await connection.query(statement);
+    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    assert.deepEqual(await rows("SELECT * FROM project_covers ORDER BY projectId"), covers);
+    for (const [table, expected] of beforeCovers)
+      assert.deepEqual(
+        await rows(`SELECT * FROM ${table}`),
+        expected,
+        `${table} must survive the cover upgrade unchanged`,
+      );
+    await assert.rejects(connection.execute(insertCover, coverValues), { code: "ER_DUP_ENTRY" });
+    await assert.rejects(connection.execute(insertCover, [randomUUID(), ...coverValues.slice(1)]), {
+      code: "ER_NO_REFERENCED_ROW_2",
+    });
+    await connection.beginTransaction();
+    try {
+      await connection.execute("DELETE FROM projects WHERE id=?", [pdf]);
+      const [remaining] = await connection.execute<RowDataPacket[]>(
+        "SELECT projectId FROM project_covers WHERE projectId=?",
+        [pdf],
+      );
+      assert.equal(remaining.length, 0, "Deleting a project must cascade to its cover metadata");
+    } finally {
+      await connection.rollback();
+    }
+    assert.deepEqual(await rows("SELECT * FROM project_covers ORDER BY projectId"), covers);
+    assert.equal((await rows("SELECT * FROM __drizzle_migrations")).length, journal.entries.length);
+    console.info(
+      "PASS: upgrade from the released screenshot schema preserves all data; interrupted cover migration resumes with automatic/custom images intact and an enforced cascading foreign key.",
     );
 
     await connection.query("CREATE DATABASE fresh_fixture");
@@ -422,6 +493,7 @@ async function main() {
       "workspace_members",
       "workspace_invitations",
       "comment_screenshots",
+      "project_covers",
       "projects",
       ...tables,
     ])

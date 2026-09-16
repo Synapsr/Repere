@@ -145,3 +145,33 @@ the feedback is read, preserving authorization across project moves and removals
 No comments are changed, no AI provider is called, and no account email fields,
 share tokens, file-storage keys or image bytes are added to the prompt. The text
 of feedback and replies is preserved, including any details their authors wrote.
+
+## Project covers
+
+`GET /api/projects/:id/cover` serves the current JPEG to authenticated workspace
+members only, with private, uncached responses. Sharing a review link does not
+grant cover access. List and manager review responses expose only
+`cover: { source: "automatic" | "custom", version } | null`, never storage keys;
+guest reviews always return `cover: null`.
+
+`POST /api/projects/:id/cover` accepts multipart `source` and `file` fields.
+PNG, JPEG and WebP inputs are bounded to 10 MiB, 10,000 pixels per edge and
+25 million pixels. Sharp validates, orients, resizes to at most 1200 × 750 and
+re-encodes the image to JPEG without its metadata. SVG and animated inputs are
+rejected. Files live in `UPLOAD_DIR/covers` with private permissions.
+
+The first automatic image is retained. A custom image takes precedence; another
+automatic upload cannot replace it. `DELETE` removes the custom image and returns
+to the retained automatic image, or to the placeholder if no automatic capture
+succeeded. Custom images can be changed on archived projects. Automatic uploads
+on archived projects are ignored.
+
+Mutations check current membership again at commit, lock the project before its
+cover row, and clean up rejected or superseded files without removing the retained
+automatic image. Migration `0004_project_covers` is additive and replayable.
+
+Automatic website covers use the existing preview renderer after initial assets
+settle; interaction, navigation and commenting cancel the attempt. PDF covers copy
+the first rendered page. Only workspace members trigger capture, with no external
+API or server browser. Existing projects acquire a cover on their next successful
+opening; capture limitations match point screenshots.

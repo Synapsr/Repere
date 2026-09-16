@@ -1,3 +1,5 @@
+import type { ProjectCover } from "./cover";
+
 export type User = { id: string; email: string; name: string };
 export type Workspace = { id: string; name: string; role: "owner" | "member" };
 export type WorkspaceMember = { user: User; role: "owner" | "member" };
@@ -58,6 +60,7 @@ export type Project = {
   updatedAt: string;
   commentCount: number;
   resolvedCount: number;
+  cover?: ProjectCover | null;
 };
 export type Reply = { id: string; body: string; author: User; createdAt: string };
 export type Feedback = {

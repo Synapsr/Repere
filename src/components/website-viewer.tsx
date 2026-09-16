@@ -7,6 +7,7 @@ import type { CaptureInput, Feedback, WebsiteAnchor } from "../../shared/types";
 import type { PreviewCommand, PreviewEvent, PreviewSession } from "../../shared/preview";
 import { parseWebsiteAnchorForOrigin } from "../../shared/validation";
 import { parseCaptureInput } from "../../shared/capture";
+import { newCaptureId } from "../../shared/capture-canvas";
 import { api } from "@/lib/client";
 import { Spinner } from "./ui";
 
@@ -20,6 +21,7 @@ type Props = {
   draft: WebsiteAnchor | null;
   onAnchor: (anchor: WebsiteAnchor, captureId: string | null) => boolean;
   onCapture: (captureId: string, capture: CaptureInput | null) => void;
+  onCover?: (capture: CaptureInput) => void;
   selected: string | null;
   onSelect: (id: string) => void;
   focus: Feedback | null;
@@ -40,6 +42,7 @@ export function WebsiteViewer({
   draft,
   onAnchor,
   onCapture,
+  onCover,
   selected,
   onSelect,
   focus,
@@ -60,9 +63,14 @@ export function WebsiteViewer({
   const [retry, setRetry] = useState(0);
   const [readyEpoch, setReadyEpoch] = useState(0);
   const readinessTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coverAttempted = useRef<string | null>(null);
+  const coverPending = useRef<{ id: string; url: string } | null>(null);
+  const coverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coverEnabled = !!onCover;
   const callbacks = useRef({
     onAnchor,
     onCapture,
+    onCover,
     draft,
     onSelect,
     mode,
@@ -72,12 +80,13 @@ export function WebsiteViewer({
     callbacks.current = {
       onAnchor,
       onCapture,
+      onCover,
       draft,
       onSelect,
       mode,
       commentIds: new Set(comments.map((comment) => comment.id)),
     };
-  }, [onAnchor, onCapture, draft, onSelect, mode, comments]);
+  }, [onAnchor, onCapture, onCover, draft, onSelect, mode, comments]);
   const clearReadinessTimeout = useCallback(() => {
     if (readinessTimer.current) clearTimeout(readinessTimer.current);
     readinessTimer.current = null;
@@ -92,6 +101,13 @@ export function WebsiteViewer({
     },
     [session],
   );
+  const cancelCover = useCallback(() => {
+    const request = coverPending.current;
+    coverPending.current = null;
+    if (coverTimer.current) clearTimeout(coverTimer.current);
+    coverTimer.current = null;
+    if (request) send({ type: "cover-cancel", requestId: request.id });
+  }, [send]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -146,6 +162,7 @@ export function WebsiteViewer({
         try {
           const next = new URL(message.url);
           if (next.origin !== new URL(session!.targetUrl).origin) return;
+          if (coverPending.current && coverPending.current.url !== next.href) cancelCover();
           clearReadinessTimeout();
           if (message.type === "ready") setReadyEpoch((epoch) => epoch + 1);
           setStatus("ready");
@@ -158,6 +175,7 @@ export function WebsiteViewer({
         }
       }
       if (message.type === "anchor" && callbacks.current.mode === "comment") {
+        cancelCover();
         const anchor = parseWebsiteAnchorForOrigin(message.anchor, session!.targetUrl);
         if (anchor) {
           const accepted = callbacks.current.onAnchor(
@@ -179,12 +197,22 @@ export function WebsiteViewer({
         callbacks.current.onCapture(message.captureId, parseCaptureInput(message.capture));
       }
       if (
+        message.type === "cover" &&
+        coverPending.current &&
+        message.requestId === coverPending.current.id
+      ) {
+        const value = parseCaptureInput(message.capture);
+        cancelCover();
+        if (value) callbacks.current.onCover?.(value);
+      }
+      if (
         message.type === "select" &&
         typeof message.id === "string" &&
         callbacks.current.commentIds.has(message.id)
       )
         callbacks.current.onSelect(message.id);
       if (message.type === "error" && typeof message.message === "string") {
+        cancelCover();
         clearReadinessTimeout();
         setErrorCode(null);
         setError(message.message.slice(0, 500));
@@ -195,7 +223,23 @@ export function WebsiteViewer({
     return () => {
       window.removeEventListener("message", receive);
     };
-  }, [session, clearReadinessTimeout, send]);
+  }, [session, clearReadinessTimeout, send, cancelCover]);
+  useEffect(() => {
+    if (
+      !session ||
+      status !== "ready" ||
+      !coverEnabled ||
+      coverAttempted.current === session.channel
+    )
+      return;
+    coverAttempted.current = session.channel;
+    if (currentUrl !== session.targetUrl || mode !== "browse" || draft || focus) return;
+    const id = newCaptureId();
+    coverPending.current = { id, url: currentUrl };
+    send({ type: "cover", requestId: id });
+    coverTimer.current = setTimeout(cancelCover, 16_000);
+    return cancelCover;
+  }, [session, status, coverEnabled, currentUrl, mode, draft, focus, send, cancelCover]);
   useEffect(() => {
     if (status === "ready") send({ type: "mode", mode });
   }, [mode, send, status, currentUrl, readyEpoch]);
@@ -236,12 +280,14 @@ export function WebsiteViewer({
       }
       setError("");
       setErrorCode(null);
+      cancelCover();
       send({ type: "navigate", url: next.href });
     } catch {
       setErrorCode("invalidAddress");
     }
   }
   function reconnect() {
+    cancelCover();
     setStatus("loading");
     setError("");
     setErrorCode(null);

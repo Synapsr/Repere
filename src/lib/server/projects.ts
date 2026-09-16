@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { database, type Transaction } from "@/db";
-import { commentScreenshots, comments, projects, replies, users } from "@/db/schema";
+import { commentScreenshots, comments, projectCovers, projects, replies, users } from "@/db/schema";
+import type { ProjectCover } from "../../../shared/cover";
 import type { Anchor, CaptureInput, Feedback, Project, Reply, User } from "../../../shared/types";
 import type { Locale } from "../../../shared/locale";
 import { feedbackPrompt } from "../feedback-prompt";
@@ -12,9 +13,10 @@ import { assertAnchorMatchesProject, websiteProjectSchema, readJson } from "./va
 import { rateLimit } from "./rate-limit";
 import { requireWorkspaceMembership, resolveWorkspace, workspaceMembership } from "./workspaces";
 import { prepareCapture, readCapture, removeCapture, storeCapture } from "./captures";
+import { coverMetadata } from "./covers";
 
 type ProjectRow = typeof projects.$inferSelect;
-export function publicProject(row: ProjectRow): Project {
+export function publicProject(row: ProjectRow, cover: ProjectCover | null = null): Project {
   return {
     id: row.id,
     name: row.name,
@@ -29,6 +31,7 @@ export function publicProject(row: ProjectRow): Project {
     updatedAt: row.updatedAt.toISOString(),
     commentCount: row.commentCount,
     resolvedCount: row.resolvedCount,
+    cover,
   };
 }
 
@@ -71,11 +74,12 @@ async function writableProject(tx: Transaction, token: string) {
 export async function listProjects(user: User, requestedWorkspaceId?: string) {
   const workspaceId = await resolveWorkspace(user, requestedWorkspaceId);
   const rows = await database()
-    .select()
+    .select({ project: projects, cover: projectCovers })
     .from(projects)
+    .leftJoin(projectCovers, eq(projectCovers.projectId, projects.id))
     .where(eq(projects.workspaceId, workspaceId))
     .orderBy(desc(projects.updatedAt));
-  return rows.map(publicProject);
+  return rows.map(({ project, cover }) => publicProject(project, coverMetadata(cover)));
 }
 
 export async function createProject(request: Request, user: User, requestedWorkspaceId?: string) {
@@ -155,9 +159,10 @@ export async function updateProject(
       updatedAt: new Date(),
     };
     await tx.update(projects).set(patch).where(eq(projects.id, id));
-    return { ...row, ...patch };
+    const [cover] = await tx.select().from(projectCovers).where(eq(projectCovers.projectId, id));
+    return publicProject({ ...row, ...patch }, coverMetadata(cover));
   });
-  return publicProject(project);
+  return project;
 }
 
 const authorFields = { id: users.id, email: users.email, name: users.name };

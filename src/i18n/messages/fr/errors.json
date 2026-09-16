@@ -61,5 +61,8 @@
   "CAPTURE_TOO_LARGE": "La capture ne doit pas dépasser 2 Mo.",
   "CAPTURE_DIMENSIONS_INVALID": "La capture ne doit pas dépasser 4 096 pixels par côté et 8 millions de pixels au total.",
   "SCREENSHOT_NOT_FOUND": "Capture introuvable.",
-  "PROMPT_EMPTY": "Il n’y a plus de retour à traiter."
+  "PROMPT_EMPTY": "Il n’y a plus de retour à traiter.",
+  "COVER_INVALID": "Choisissez une image JPEG, PNG ou WebP valide.",
+  "COVER_DIMENSIONS_INVALID": "La couverture ne doit pas dépasser 10 000 pixels par côté et 25 millions de pixels au total.",
+  "COVER_NOT_FOUND": "Couverture introuvable."
 }

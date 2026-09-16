@@ -29,6 +29,13 @@
       "when": 1789552666299,
       "tag": "0003_comment_screenshots",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1789562361134,
+      "tag": "0004_project_covers",
+      "breakpoints": true
     }
   ]
 }

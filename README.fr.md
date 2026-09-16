@@ -49,6 +49,7 @@ Repère est une alternative open source indépendante pour le cas d'usage de ret
 | **Votre équipe**              | Inviter par email, suivre les invitations en attente et gérer les membres d’un espace.                                                    |
 | **Sites et PDF**              | Ajouter une URL ou importer un PDF privé jusqu'à 20 Mio. Rechercher et filtrer vos projets.                                               |
 | **Captures des points**       | Capturez la page au moment du clic, conservez-la avec le retour et ouvrez-la en grand.                                                    |
+| **Couvertures des projets**   | Un aperçu privé à la première ouverture, remplaçable par votre image dans les paramètres. Sans API externe.                               |
 | **Prompts IA**                | Les membres de l’espace peuvent copier tous les retours à traiter, ou un seul, avec les repères de page et les réponses.                  |
 | **Un lien partagé**           | Inviter des participants qui vérifient leur email avec un code à usage unique. Aucun mot de passe à créer.                                |
 | **Des retours précis**        | Attacher un point à un élément et une page du site, ou à une position sur une page PDF.                                                   |

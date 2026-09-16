@@ -49,6 +49,7 @@ Repère is an independent, open-source alternative for the visual feedback use c
 | **Your team**           | Invite people by email, follow pending invitations and manage workspace members.                                    |
 | **Websites and PDFs**   | Add a URL or upload a private PDF up to 20 MiB. Search and filter your projects.                                    |
 | **Point screenshots**   | Capture the page when placing a point, keep it with the comment, and open it at full size.                          |
+| **Project covers**      | Capture a private preview on first opening, upload your own cover, or restore the automatic image. No external API. |
 | **AI prompts**          | Workspace members can copy all open feedback, or a single comment, with its page context and replies.               |
 | **One shared link**     | Invite reviewers who verify their email with a one-time code. No password to create.                                |
 | **Precise feedback**    | Attach a point to a website element and page, or to a position on a PDF page.                                       |

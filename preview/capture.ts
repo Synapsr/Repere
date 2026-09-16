@@ -7,6 +7,49 @@ const RENDER_MAX_EDGE = 2_048;
 
 type CapturePoint = { x: number; y: number; capturedAt: string };
 
+/** One best-effort cover, after assets settle, without delaying website interaction. */
+export function captureInitialCover(signal: AbortSignal): Promise<CaptureInput | null> {
+  if (signal.aborted) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    let settled = false;
+    let scheduled = false;
+    let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    const finish = (capture: CaptureInput | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(deadline);
+      clearTimeout(settleTimer);
+      window.removeEventListener("load", loaded);
+      signal.removeEventListener("abort", abort);
+      resolve(capture);
+    };
+    const abort = () => finish(null);
+    const schedule = () => {
+      if (settled || scheduled) return;
+      scheduled = true;
+      clearTimeout(deadline);
+      window.removeEventListener("load", loaded);
+      settleTimer = setTimeout(() => {
+        void captureViewport(
+          {
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2,
+            capturedAt: new Date().toISOString(),
+          },
+          signal,
+        ).then(finish);
+      }, 300);
+    };
+    const loaded = () => {
+      void document.fonts.ready.then(schedule, schedule);
+    };
+    const deadline = setTimeout(schedule, 2_000);
+    signal.addEventListener("abort", abort, { once: true });
+    if (document.readyState === "complete") loaded();
+    else window.addEventListener("load", loaded, { once: true });
+  });
+}
+
 /** Start cloning immediately: awaiting a module or a frame here would capture a later state. */
 export function captureViewport(
   point: CapturePoint,

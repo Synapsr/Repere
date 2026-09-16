@@ -61,5 +61,8 @@
   "CAPTURE_TOO_LARGE": "The screenshot must be no larger than 2 MB.",
   "CAPTURE_DIMENSIONS_INVALID": "The screenshot must fit within 4,096 pixels per side and 8 million pixels in total.",
   "SCREENSHOT_NOT_FOUND": "Screenshot not found.",
-  "PROMPT_EMPTY": "There is no feedback left to address."
+  "PROMPT_EMPTY": "There is no feedback left to address.",
+  "COVER_INVALID": "Choose a valid JPEG, PNG or WebP image.",
+  "COVER_DIMENSIONS_INVALID": "The cover must fit within 10,000 pixels per side and 25 million pixels in total.",
+  "COVER_NOT_FOUND": "Cover not found."
 }

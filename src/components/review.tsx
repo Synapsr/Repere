@@ -37,6 +37,7 @@ import { WebsiteViewer } from "./website-viewer";
 import { CopyPromptButton } from "./copy-prompt-button";
 import { CommentCapture } from "./comment-capture";
 import { ReviewOnboarding } from "./review-onboarding";
+import { ProjectCoverSettings } from "./project-cover-settings";
 import "./review.css";
 
 function PdfLoading() {
@@ -60,6 +61,49 @@ type DraftCapture = {
 export function Review({ token }: { token: string }) {
   const t = useTranslations("review");
   const [data, setData] = useState<ReviewData | null>(null);
+  const coverRequest = useRef<AbortController | null>(null);
+  const coverProject = useRef<string | null>(null);
+  useEffect(
+    () => () => {
+      coverRequest.current?.abort();
+      coverProject.current = null;
+    },
+    [token],
+  );
+  const saveAutomaticCover = useCallback(
+    (capture: CaptureInput) => {
+      if (!data?.canManage || data.project.archived || data.project.cover) return;
+      const id = data.project.id;
+      if (coverProject.current === id) return;
+      coverProject.current = id;
+      const controller = new AbortController();
+      coverRequest.current = controller;
+      const bytes = Uint8Array.from(atob(capture.dataUrl.split(",")[1]), (char) =>
+        char.charCodeAt(0),
+      );
+      const body = new FormData();
+      body.set("source", "automatic");
+      body.set("file", new Blob([bytes], { type: "image/jpeg" }), "preview.jpg");
+      void api<{ cover: ReviewData["project"]["cover"] }>(`/api/projects/${id}/cover`, {
+        method: "POST",
+        body,
+        signal: controller.signal,
+      })
+        .then(({ cover }) => {
+          if (controller.signal.aborted) return;
+          // Never replace a custom cover chosen while the automatic upload was pending.
+          setData((current) =>
+            current?.project.id === id && current.canManage && !current.project.cover
+              ? { ...current, project: { ...current.project, cover } }
+              : current,
+          );
+        })
+        .catch(() => {
+          /* Best effort: creating a cover must not interrupt the review. */
+        });
+    },
+    [data],
+  );
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"browse" | "comment">("browse");
   const [selected, setSelected] = useState<string | null>(null);
@@ -440,6 +484,9 @@ export function Review({ token }: { token: string }) {
               draft={pendingAnchor?.type === "website" ? pendingAnchor : null}
               onAnchor={anchor}
               onCapture={receivedCapture}
+              onCover={
+                data.canManage && !project.cover && !readOnly ? saveAutomaticCover : undefined
+              }
               selected={selected}
               onSelect={choose}
               focus={focus}
@@ -453,6 +500,9 @@ export function Review({ token }: { token: string }) {
               comments={comments}
               onAnchor={anchor}
               onCapture={receivedCapture}
+              onCover={
+                data.canManage && !project.cover && !readOnly ? saveAutomaticCover : undefined
+              }
               selected={selected}
               onSelect={choose}
               focus={focus}
@@ -863,6 +913,7 @@ function ProjectSettings({
           <Check size={15} />
         </button>
       </form>
+      <ProjectCoverSettings project={data.project} onUpdated={onUpdated} />
       {(workspaces.length > 1 || workspaceError) && (
         <div className="settings-section">
           <h3>{t("moveTitle")}</h3>
