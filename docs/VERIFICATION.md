@@ -2,6 +2,33 @@
 
 This page records observed checks, not compatibility promises. Test instructions are in [TESTING.md](TESTING.md).
 
+## Project covers 0.6.0 — 16 September 2026
+
+Source revision [`8546fb7`](https://github.com/Synapsr/Repere/commit/8546fb78cc95ba78137bcf5373f771b1535555d1) passed [CI run 35101539442](https://github.com/Synapsr/Repere/actions/runs/35101539442). Observed checks:
+
+- **184 unit and HTTP tests** pass, alongside TypeScript, ESLint, formatting and dependency audit (zero reported vulnerabilities).
+- **59 integration scenarios** pass: 13 API, 23 Chromium and 23 Firefox. The two opt-in HTTPS checks are skipped. The cover journey also passed again in both browsers after the mobile preview width adjustment.
+- Real website previews produce nonempty cover pixels. A two-color PDF uses its first page; later page navigation cannot replace it. Uploading a custom image persists across reload; restoring the automatic image returns its original bytes.
+- API checks cover private member access, hidden guest metadata, automatic/custom precedence, replacement, restoration, current membership after removal or transfer, CSRF and rejected image uploads. JPEG, PNG and WebP signatures, dimensions, decoded pixels, metadata removal, private file permissions and cleanup after a rejected transaction have focused checks.
+- Ten additional real-browser bridge checks across Chromium and Firefox cover initial capture, one-attempt behavior, cancellation on interaction/navigation and explicit cancellation, with comment capture taking priority. No external screenshot API or server browser is used by the application.
+- Both browsers also cover browser-language redirects before the first cover, late capture cancellation after navigation, panel expansion without iframe reload, preserved drafts, local panel preferences, keyboard menus, private menu actions, styled tooltips (including native modal dialogs) and the clipboard fallback after its menu closes.
+- Desktop cards, mobile cards and the cover settings were visually inspected. Comment menus were inspected at desktop and 320 px widths. Tests use synthetic identities and local Mailpit; no production email was sent.
+- Fresh MySQL installation, upgrades from the previous schemas, interrupted DDL and repeated startup preserve existing projects, feedback and screenshots. The new cover table retains automatic/custom keys and enforces its project foreign key. All four invitation concurrency tests still pass.
+
+### Docker publication and production deployment
+
+Tags `synapsr/repere:0.6.0`, `0.6` and `latest` identify this verified public AMD64/ARM64 index:
+
+```text
+sha256:027f10bd61d3d1eef4af39dfb321fddd41bbbc2b8347f75e6bbb3d6b2b22d825
+```
+
+Both architectures started with integrated MySQL (14 tables, 5 migrations). Packaged API checks exercised automatic and custom covers, ignored late automatic uploads, anonymous-access rejection and restoration. Custom image bytes survived restart, and the retained automatic image remained recoverable. Existing workspace, invitation, prompt and screenshot checks passed. AMD64 ran under Docker Desktop emulation on ARM64; this is a functionality check, not a performance benchmark.
+
+Anonymous registry reads confirm that the published runtime manifests and configurations match the tested images, both include SLSA provenance and SPDX SBOMs, and the 0.1–0.5 tags are preserved. Native image-library license inventories remain present.
+
+Production app and preview services were deployed from the same revision after a successful MySQL backup. Startup migrations completed, the health endpoint returned 200 and unauthenticated cover access returned 401. Existing environment variables and volumes were retained. These checks do not claim a production restore or a newly authenticated production browser journey.
+
 ## Feedback prompts 0.5.0 — 16 September 2026
 
 Source revision [`cae2e6d`](https://github.com/Synapsr/Repere/commit/cae2e6dd68654a139f3da0c651b71a0837ab8f49) passed [CI run 35095208446](https://github.com/Synapsr/Repere/actions/runs/35095208446). Local checks and final CI cover:

@@ -1,8 +1,14 @@
 # Changelog
 
-This file records user-visible changes. Historical image digests refer to their publication date; `latest` follows the newest release. Container version `0.5.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
+This file records user-visible changes. Historical image digests refer to their publication date; `latest` follows the newest release. Container version `0.6.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
 ## 0.6.0 — 2026-09-16
+
+Published from [`8546fb7`](https://github.com/Synapsr/Repere/commit/8546fb78cc95ba78137bcf5373f771b1535555d1). Tags `0.6.0`, `0.6` and `latest` identify this AMD64/ARM64 index:
+
+```text
+sha256:027f10bd61d3d1eef4af39dfb321fddd41bbbc2b8347f75e6bbb3d6b2b22d825
+```
 
 - Project cards display a private cover captured automatically when a workspace member first opens the website or the first page of a PDF. Capture runs in the existing browser preview, without an external API or a headless-browser service.
 - Project settings accept a custom PNG, JPEG or WebP image up to 10 MiB. Members can restore the retained automatic image; delayed captures never overwrite a custom cover.
