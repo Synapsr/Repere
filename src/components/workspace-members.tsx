@@ -1,4 +1,5 @@
 "use client";
+import { Tooltip } from "./tooltip";
 
 import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "react";
 import { Mail, RotateCw, Send, UserMinus } from "lucide-react";
@@ -248,18 +249,19 @@ export function WorkspaceMembers({
                       {t(member.role === "owner" ? "memberOwner" : "memberRole")}
                     </span>
                     {owner && member.role !== "owner" && member.user.id !== currentUserId && (
-                      <button
-                        className="icon-button"
-                        disabled={!!busy}
-                        aria-label={t("removeMember", { name: member.user.name })}
-                        title={t("removeMember", { name: member.user.name })}
-                        onClick={() => {
-                          interruptRefresh();
-                          setConfirm(member.user.id);
-                        }}
-                      >
-                        <UserMinus size={16} />
-                      </button>
+                      <Tooltip content={t("removeMember", { name: member.user.name })} asChild>
+                        <button
+                          className="icon-button"
+                          disabled={!!busy}
+                          aria-label={t("removeMember", { name: member.user.name })}
+                          onClick={() => {
+                            interruptRefresh();
+                            setConfirm(member.user.id);
+                          }}
+                        >
+                          <UserMinus size={16} />
+                        </button>
+                      </Tooltip>
                     )}
                   </div>
                   {confirm === member.user.id && (
@@ -327,15 +329,19 @@ export function WorkspaceMembers({
                         >
                           {t("resendInvitation")}
                         </button>
-                        <button
-                          className="text-button"
-                          disabled={!!busy}
-                          aria-label={t("cancelInvitationTo", { email: invitation.email })}
-                          title={t("cancelInvitationTo", { email: invitation.email })}
-                          onClick={() => cancel(invitation)}
+                        <Tooltip
+                          content={t("cancelInvitationTo", { email: invitation.email })}
+                          asChild
                         >
-                          {t("cancel")}
-                        </button>
+                          <button
+                            className="text-button"
+                            disabled={!!busy}
+                            aria-label={t("cancelInvitationTo", { email: invitation.email })}
+                            onClick={() => cancel(invitation)}
+                          >
+                            {t("cancel")}
+                          </button>
+                        </Tooltip>
                       </div>
                     </li>
                   ))}

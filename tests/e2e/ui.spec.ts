@@ -278,19 +278,23 @@ test("OTP, website creation, precise page comments and shared review work end to
       .getByRole("button", { name: "Répondre", exact: true })
       .click();
     await expect(reviewerPage.locator(".reply").getByText(reply, { exact: true })).toBeVisible();
+    await reviewerPage.getByRole("button", { name: "Actions du retour 1", exact: true }).click();
     await expect(
-      reviewerPage.getByRole("button", { name: "Résoudre le retour 1" }),
-    ).not.toBeVisible();
+      reviewerPage.getByRole("menuitem", { name: "Résoudre le retour 1", exact: true }),
+    ).toHaveCount(0);
+    await reviewerPage.keyboard.press("Escape");
     await page.reload();
     await expect(page.locator(".feedback-card").getByText(body, { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Ouvrir le retour 1", exact: true }).click();
     await expect(page.locator(".reply").getByText(reply, { exact: true })).toBeVisible();
     await expect(page.locator(".reply").getByText(reviewer.name, { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Résoudre le retour 1" }).click();
+    await page.getByRole("button", { name: "Actions du retour 1", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Résoudre le retour 1", exact: true }).click();
     await expect(page.locator(".feedback-card").getByText(body, { exact: true })).not.toBeVisible();
     await page.getByRole("button", { name: /^Résolus/ }).click();
     await expect(page.locator(".feedback-card").getByText(body, { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Rouvrir le retour 1" }).click();
+    await page.getByRole("button", { name: "Actions du retour 1", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Rouvrir le retour 1", exact: true }).click();
     await page.getByRole("button", { name: /^À traiter/ }).click();
     await expect(page.locator(".feedback-card").getByText(body, { exact: true })).toBeVisible();
     await page.screenshot({
@@ -299,7 +303,9 @@ test("OTP, website creation, precise page comments and shared review work end to
       animations: "disabled",
     });
     await page.setViewportSize({ width: 390, height: 844 });
-    const hideFeedback = page.getByRole("button", { name: "Masquer les retours" });
+    const hideFeedback = page
+      .getByRole("complementary")
+      .getByRole("button", { name: "Masquer les retours", exact: true });
     if (await hideFeedback.isVisible()) await hideFeedback.click();
     // Resizing a focused desktop comment must not pan or crop the native document.
     await expect
@@ -531,7 +537,11 @@ test("archived projects retain owner-readable feedback and PDFs without starting
     await expect(page.getByRole("button", { name: "Partager", exact: true })).toBeDisabled();
     await page.getByRole("button", { name: "Ouvrir le retour 1", exact: true }).click();
     await expect(page.getByLabel("Répondre au retour 1")).not.toBeVisible();
-    await expect(page.getByRole("button", { name: "Résoudre le retour 1" })).not.toBeVisible();
+    await page.getByRole("button", { name: "Actions du retour 1", exact: true }).click();
+    await expect(
+      page.getByRole("menuitem", { name: "Résoudre le retour 1", exact: true }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
     expect(previewRequests).toEqual([]);
 
     const createdPdf = await api.post("/api/projects", {

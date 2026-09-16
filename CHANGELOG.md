@@ -8,6 +8,9 @@ This file records user-visible changes. Historical image digests refer to their 
 - Project settings accept a custom PNG, JPEG or WebP image up to 10 MiB. Members can restore the retained automatic image; delayed captures never overwrite a custom cover.
 - Images are decoded, resized and re-encoded locally, stripped of metadata and stored in the private upload volume. Cover files and metadata are inaccessible to review-link guests.
 - Automatic capture gives priority to navigation and commenting. Existing projects keep their placeholder until a successful first capture; unsupported websites can use an uploaded image.
+- The feedback panel can collapse to give the website more space. Its preference is remembered locally; selecting a point reopens it without losing drafts or reloading the website.
+- Each comment has one action menu for locating its point, viewing its screenshot, copying a prompt and resolving or reopening it, according to the current user's permissions.
+- Application controls use styled tooltips on hover and keyboard focus. Menus support keyboard navigation, and animations respect reduced-motion preferences.
 
 **Upgrade:** deploy the app and preview service. Startup applies the additive `0004_project_covers` migration. Keep the existing upload volume; no new environment variable is needed.
 

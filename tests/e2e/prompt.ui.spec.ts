@@ -70,7 +70,10 @@ test("managers copy open prompts individually or together, with a manual clipboa
       expect(all).toContain(value);
     expect(all).not.toContain(feedback[2].body);
     const first = page.locator(".feedback-card").filter({ hasText: feedback[0].body });
-    await first.getByRole("button", { name: "Copier ce retour en prompt", exact: true }).click();
+    await first
+      .getByRole("button", { name: `Actions du retour ${feedback[0].number}`, exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Copier ce retour en prompt", exact: true }).click();
     await expect
       .poll(() => page.evaluate(() => (window as ClipboardWindow).promptCopies.length))
       .toBe(2);
@@ -78,7 +81,14 @@ test("managers copy open prompts individually or together, with a manual clipboa
     expect(single).toContain(feedback[0].body);
     expect(single).not.toContain(feedback[1].body);
     await page.getByRole("button", { name: /^Résolus/ }).click();
+    await page
+      .getByRole("button", { name: `Actions du retour ${feedback[2].number}`, exact: true })
+      .click();
+    await expect(
+      page.getByRole("menuitem", { name: "Copier ce retour en prompt", exact: true }),
+    ).toHaveCount(0);
     await expect(page.locator(".copy-prompt-button")).toHaveCount(0);
+    await page.keyboard.press("Escape");
     await page.getByRole("button", { name: /^À traiter/ }).click();
     // The visible review can be stale; the server still exports current statuses.
     await owner.api.patch(`${review}/comments/${feedback[0].id}`, { data: { status: "resolved" } });
@@ -92,7 +102,12 @@ test("managers copy open prompts individually or together, with a manual clipboa
     await page.evaluate(() => {
       (window as ClipboardWindow).denyPromptClipboard = true;
     });
-    await bulk.click();
+    const fallbackTrigger = page
+      .locator(".feedback-card")
+      .filter({ hasText: feedback[1].body })
+      .getByRole("button", { name: `Actions du retour ${feedback[1].number}`, exact: true });
+    await fallbackTrigger.click();
+    await page.getByRole("menuitem", { name: "Copier ce retour en prompt", exact: true }).click();
     const fallback = page.getByRole("dialog", { name: "Copier le prompt", exact: true });
     await expect(fallback).toBeVisible();
     const promptText = fallback.getByRole("textbox", { name: "Copier le prompt" });
@@ -106,29 +121,51 @@ test("managers copy open prompts individually or together, with a manual clipboa
     expect(await page.evaluate(() => (window as ClipboardWindow).promptCopies.length)).toBe(3);
     await page.keyboard.press("Escape");
     await expect(fallback).not.toBeVisible();
+    await expect(fallbackTrigger).toBeFocused();
 
     const own = await guest.api.post(`${review}/comments`, {
       data: { body: "Guest-owned feedback", anchor: websiteAnchor(project.url!) },
     });
     expect(own.status()).toBe(201);
+    const ownComment = ((await own.json()) as { comment: Feedback }).comment;
     await guestPage.goto(`/r/${project.shareToken}`);
     await expect(
       guestPage.locator(".feedback-card").filter({ hasText: "Guest-owned feedback" }),
     ).toBeVisible();
+    await guestPage
+      .getByRole("button", { name: `Actions du retour ${ownComment.number}`, exact: true })
+      .click();
+    await expect(
+      guestPage.getByRole("menuitem", { name: "Copier ce retour en prompt", exact: true }),
+    ).toHaveCount(0);
     await expect(guestPage.locator(".copy-prompt-button")).toHaveCount(0);
+    await guestPage.keyboard.press("Escape");
     expect((await guest.api.get(`/api/projects/${project.id}/prompt`)).status()).toBe(404);
     removeMember = await grantWorkspaceMember(project.workspaceId, guest.person.user.id);
     await guestPage.reload();
     await expect(guestPage.locator(".feedback-heading .copy-prompt-button")).toBeVisible();
+    await guestPage
+      .getByRole("button", { name: `Actions du retour ${ownComment.number}`, exact: true })
+      .click();
+    await expect(
+      guestPage.getByRole("menuitem", { name: "Copier ce retour en prompt", exact: true }),
+    ).toBeVisible();
     await removeMember();
     removeMember = undefined;
     await expect(guestPage.locator(".copy-prompt-button")).toHaveCount(0, { timeout: 12_000 });
     await expect(
+      guestPage.getByRole("menuitem", { name: "Copier ce retour en prompt", exact: true }),
+    ).toHaveCount(0);
+    await guestPage.keyboard.press("Escape");
+    await expect(
       guestPage.locator(".feedback-card").filter({ hasText: "Guest-owned feedback" }),
     ).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
-    if (!(await bulk.isVisible()))
-      await page.getByRole("button", { name: "Afficher les retours", exact: true }).click();
+    if (!(await bulk.isVisible())) {
+      const toggle = page.locator(".review-sidebar-toggle");
+      await expect(toggle).toHaveAccessibleName("Afficher les retours");
+      await toggle.click();
+    }
     await expect(bulk).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath("copy-prompts-mobile.png"),

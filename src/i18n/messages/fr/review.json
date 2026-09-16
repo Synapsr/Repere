@@ -100,5 +100,7 @@
   "coverHint": "PNG, JPG ou WebP · 10 Mo max.",
   "coverAutomaticHint": "L’aperçu est créé à l’ouverture du projet. Vous pouvez aussi importer une image (PNG, JPG ou WebP, 10 Mo max.).",
   "coverTooLarge": "Choisissez une image de 10 Mo maximum.",
-  "coverInvalid": "Choisissez une image PNG, JPG ou WebP."
+  "coverInvalid": "Choisissez une image PNG, JPG ou WebP.",
+  "commentActions": "Actions du retour {number}",
+  "showPoint": "Voir le point"
 }

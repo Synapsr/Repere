@@ -1,4 +1,5 @@
 "use client";
+import { Tooltip } from "./tooltip";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
@@ -62,6 +63,7 @@ export function WebsiteViewer({
   const [address, setAddress] = useState(url);
   const [retry, setRetry] = useState(0);
   const [readyEpoch, setReadyEpoch] = useState(0);
+  const [firstReady, setFirstReady] = useState<{ channel: string; url: string } | null>(null);
   const readinessTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const coverAttempted = useRef<string | null>(null);
   const coverPending = useRef<{ id: string; url: string } | null>(null);
@@ -164,7 +166,16 @@ export function WebsiteViewer({
           if (next.origin !== new URL(session!.targetUrl).origin) return;
           if (coverPending.current && coverPending.current.url !== next.href) cancelCover();
           clearReadinessTimeout();
-          if (message.type === "ready") setReadyEpoch((epoch) => epoch + 1);
+          if (message.type === "ready") {
+            setReadyEpoch((epoch) => epoch + 1);
+            // Browser language/cookies can produce a same-origin redirect that
+            // the header-only registration request could not observe.
+            setFirstReady((current) =>
+              current?.channel === session!.channel
+                ? current
+                : { channel: session!.channel, url: next.href },
+            );
+          }
           setStatus("ready");
           setError("");
           setErrorCode(null);
@@ -228,18 +239,30 @@ export function WebsiteViewer({
     if (
       !session ||
       status !== "ready" ||
+      firstReady?.channel !== session.channel ||
       !coverEnabled ||
       coverAttempted.current === session.channel
     )
       return;
     coverAttempted.current = session.channel;
-    if (currentUrl !== session.targetUrl || mode !== "browse" || draft || focus) return;
+    if (currentUrl !== firstReady.url || mode !== "browse" || draft || focus) return;
     const id = newCaptureId();
     coverPending.current = { id, url: currentUrl };
     send({ type: "cover", requestId: id });
     coverTimer.current = setTimeout(cancelCover, 16_000);
     return cancelCover;
-  }, [session, status, coverEnabled, currentUrl, mode, draft, focus, send, cancelCover]);
+  }, [
+    session,
+    status,
+    firstReady,
+    coverEnabled,
+    currentUrl,
+    mode,
+    draft,
+    focus,
+    send,
+    cancelCover,
+  ]);
   useEffect(() => {
     if (status === "ready") send({ type: "mode", mode });
   }, [mode, send, status, currentUrl, readyEpoch]);
@@ -315,48 +338,54 @@ export function WebsiteViewer({
                 value={address}
                 onChange={(event) => setAddress(event.target.value)}
               />
-              <button className="icon-button" aria-label={t("go")} title={t("go")}>
-                <ArrowRight size={16} />
-              </button>
+              <Tooltip content={t("go")} asChild>
+                <button className="icon-button" aria-label={t("go")}>
+                  <ArrowRight size={16} />
+                </button>
+              </Tooltip>
             </div>
             <div className="website-menu-actions">
-              <button
-                type="button"
-                className="icon-button"
-                title={t("back")}
-                aria-label={t("back")}
-                onClick={() => send({ type: "back" })}
-              >
-                <ArrowLeft size={16} />
-              </button>
-              <button
-                type="button"
-                className="icon-button"
-                title={t("forward")}
-                aria-label={t("forward")}
-                onClick={() => send({ type: "forward" })}
-              >
-                <ArrowRight size={16} />
-              </button>
-              <button
-                type="button"
-                className="icon-button"
-                title={t("reload")}
-                aria-label={t("reload")}
-                onClick={() => send({ type: "reload" })}
-              >
-                <RotateCw size={15} />
-              </button>
-              <a
-                className="icon-button"
-                href={currentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={t("openExternal")}
-                aria-label={t("openExternal")}
-              >
-                <ExternalLink size={15} />
-              </a>
+              <Tooltip content={t("back")} asChild>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={t("back")}
+                  onClick={() => send({ type: "back" })}
+                >
+                  <ArrowLeft size={16} />
+                </button>
+              </Tooltip>
+              <Tooltip content={t("forward")} asChild>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={t("forward")}
+                  onClick={() => send({ type: "forward" })}
+                >
+                  <ArrowRight size={16} />
+                </button>
+              </Tooltip>
+              <Tooltip content={t("reload")} asChild>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={t("reload")}
+                  onClick={() => send({ type: "reload" })}
+                >
+                  <RotateCw size={15} />
+                </button>
+              </Tooltip>
+              <Tooltip content={t("openExternal")} asChild>
+                <a
+                  className="icon-button"
+                  href={currentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t("openExternal")}
+                >
+                  <ExternalLink size={15} />
+                </a>
+              </Tooltip>
             </div>
           </form>,
           controlsHost,

@@ -1,0 +1,83 @@
+.tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 0;
+  vertical-align: middle;
+  border-radius: 8px;
+}
+
+.tooltip-trigger[tabindex="0"]:focus-visible {
+  outline: 3px solid #93a8fa;
+  outline-offset: 4px;
+}
+
+.tooltip-bubble {
+  --tooltip-x: 0px;
+  --tooltip-y: 3px;
+  position: fixed;
+  z-index: 10000;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(240px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #282a30;
+  color: #fff;
+  box-shadow:
+    0 3px 12px #1113181c,
+    0 1px 3px #11131814;
+  font-size: 12px;
+  font-weight: 450;
+  line-height: 1.45;
+  text-align: center;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  overflow: auto;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(var(--tooltip-x), var(--tooltip-y));
+  transition:
+    opacity 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.tooltip-bubble[data-side="bottom"] {
+  --tooltip-y: -3px;
+}
+.tooltip-bubble[data-side="left"] {
+  --tooltip-x: 3px;
+  --tooltip-y: 0px;
+}
+.tooltip-bubble[data-side="right"] {
+  --tooltip-x: -3px;
+  --tooltip-y: 0px;
+}
+.tooltip-bubble[data-positioned="true"] {
+  visibility: visible;
+}
+.tooltip-bubble[data-open="true"] {
+  opacity: 1;
+  transform: translate(0, 0);
+  pointer-events: auto;
+}
+
+@starting-style {
+  .tooltip-bubble[data-open="true"] {
+    opacity: 0;
+    transform: translate(var(--tooltip-x), var(--tooltip-y));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip-bubble {
+    transition: none;
+    transform: none;
+  }
+}

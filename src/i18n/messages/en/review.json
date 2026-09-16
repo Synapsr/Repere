@@ -100,5 +100,7 @@
   "coverHint": "PNG, JPG or WebP · up to 10 MB.",
   "coverAutomaticHint": "The preview is created when you open the project. You can also upload an image (PNG, JPG or WebP, up to 10 MB).",
   "coverTooLarge": "Choose an image up to 10 MB.",
-  "coverInvalid": "Choose a PNG, JPG or WebP image."
+  "coverInvalid": "Choose a PNG, JPG or WebP image.",
+  "commentActions": "Actions for feedback {number}",
+  "showPoint": "Show point"
 }

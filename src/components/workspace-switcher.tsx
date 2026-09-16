@@ -1,4 +1,5 @@
 "use client";
+import { Tooltip } from "./tooltip";
 
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Check, ChevronsUpDown, Plus, Users } from "lucide-react";
@@ -110,9 +111,11 @@ export function WorkspaceSwitcher({
         <span className="workspace-avatar" aria-hidden="true">
           {Array.from(workspace.name)[0]?.toLocaleUpperCase()}
         </span>
-        <span className="workspace-name" id={`${id}-name`} title={workspace.name}>
-          {workspace.name}
-        </span>
+        <Tooltip content={workspace.name} asChild>
+          <span className="workspace-name" id={`${id}-name`}>
+            {workspace.name}
+          </span>
+        </Tooltip>
         <ChevronsUpDown size={15} aria-hidden="true" />
       </button>
       {open && (

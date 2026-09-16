@@ -134,3 +134,12 @@ have focused unit tests.
 
 The complete API and browser suites now request 23 and 26 OTPs respectively. Keep
 their MySQL/Mailpit stacks separate so normal authentication limits remain active.
+
+## Review controls
+
+Controlled browser fixtures add no OTP requests. They verify that collapsing the
+feedback panel preserves the live iframe and unsent draft, that a point reopens the
+panel, and that the visibility preference survives reload. Keyboard and narrow-screen
+checks cover comment menus, focus restoration, styled tooltips and viewport bounds.
+The real screenshot and prompt journeys exercise the same menu actions with stored
+images, membership permissions and the selected-text clipboard fallback.

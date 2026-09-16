@@ -331,13 +331,18 @@ test("website and PDF points keep their original pixels and open a positioned la
     expect(await (await api.get(screenshotUrl)).body()).toEqual(original);
     await page.reload();
     const card = page.locator(".feedback-card").filter({ hasText: comment.body });
-    const captureButton = card.getByRole("button", { name: "Voir la capture", exact: true });
+    const actions = card.getByRole("button", {
+      name: `Actions du retour ${comment.number}`,
+      exact: true,
+    });
+    const captureButton = page.getByRole("menuitem", { name: "Voir la capture", exact: true });
     await expect(card.getByRole("img")).toHaveCount(0);
-    await expect(
-      card.locator(".feedback-card-heading").getByRole("button", { name: "Voir la capture" }),
-    ).toBeVisible();
+    await expect(actions).toBeVisible();
+    await expect(captureButton).toHaveCount(0);
+    await actions.click();
+    await expect(captureButton).toBeVisible();
     await page.screenshot({
-      path: testInfo.outputPath("comment-capture-icon.png"),
+      path: testInfo.outputPath("comment-capture-menu.png"),
       animations: "disabled",
     });
     await captureButton.click();
@@ -381,9 +386,15 @@ test("website and PDF points keep their original pixels and open a positioned la
       "This comment still publishes normally.",
     );
     expect(textOnly.screenshot).toBeNull();
-    await expect(
-      page.locator(".feedback-card").getByRole("button", { name: "Voir la capture" }),
-    ).toHaveCount(0);
+    await page
+      .locator(".feedback-card")
+      .filter({ hasText: textOnly.body })
+      .getByRole("button", { name: `Actions du retour ${textOnly.number}`, exact: true })
+      .click();
+    await expect(page.getByRole("menuitem", { name: "Voir la capture", exact: true })).toHaveCount(
+      0,
+    );
+    await page.keyboard.press("Escape");
 
     const uploaded = await api.post("/api/projects", {
       multipart: {
@@ -427,8 +438,10 @@ test("website and PDF points keep their original pixels and open a positioned la
     expect(await (await api.get(pdfScreenshot)).body()).toEqual(blue);
     await page
       .locator(".feedback-card")
-      .getByRole("button", { name: "Voir la capture", exact: true })
+      .filter({ hasText: pdfComment.body })
+      .getByRole("button", { name: `Actions du retour ${pdfComment.number}`, exact: true })
       .click();
+    await page.getByRole("menuitem", { name: "Voir la capture", exact: true }).click();
     await decodedImage(
       page
         .getByRole("dialog", { name: "Capture du point", exact: true })

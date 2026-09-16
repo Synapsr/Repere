@@ -16,8 +16,6 @@ import {
   X,
   ArrowUpRight,
   Send,
-  CheckCircle2,
-  Circle,
   ChevronDown,
   Archive,
   RotateCcw,
@@ -27,6 +25,8 @@ import {
   Globe,
   MoreHorizontal,
   CircleHelp,
+  PanelRightClose,
+  PanelRightOpen,
 } from "lucide-react";
 import type { Anchor, CaptureInput, Feedback, ReviewData, Workspace } from "../../shared/types";
 import { api, relativeDate } from "@/lib/client";
@@ -35,7 +35,8 @@ import { Logo, Avatar, Modal, Spinner, ErrorBanner } from "./ui";
 import { AuthForm } from "./auth";
 import { WebsiteViewer } from "./website-viewer";
 import { CopyPromptButton } from "./copy-prompt-button";
-import { CommentCapture } from "./comment-capture";
+import { FeedbackActions } from "./feedback-actions";
+import { Tooltip } from "./tooltip";
 import { ReviewOnboarding } from "./review-onboarding";
 import { ProjectCoverSettings } from "./project-cover-settings";
 import "./review.css";
@@ -57,6 +58,19 @@ type DraftCapture = {
   result: Promise<CaptureInput | null>;
   resolve: (value: CaptureInput | null) => void;
 };
+
+const SIDEBAR_PREFERENCE = "repere.feedback-panel.v1";
+
+function initialSidebarVisibility() {
+  if (typeof window === "undefined") return true;
+  try {
+    const preference = localStorage.getItem(SIDEBAR_PREFERENCE);
+    if (preference === "open" || preference === "closed") return preference === "open";
+  } catch {
+    // The panel still works when browser storage is unavailable.
+  }
+  return window.matchMedia("(min-width: 701px)").matches;
+}
 
 export function Review({ token }: { token: string }) {
   const t = useTranslations("review");
@@ -137,7 +151,17 @@ export function Review({ token }: { token: string }) {
   const [settings, setSettings] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(initialSidebarVisibility);
+  const sidebarToggle = useRef<HTMLButtonElement>(null);
+  function toggleSidebar(visible: boolean) {
+    if (!visible) sidebarToggle.current?.focus();
+    setShowSidebar(visible);
+    try {
+      localStorage.setItem(SIDEBAR_PREFERENCE, visible ? "open" : "closed");
+    } catch {
+      // Saving this optional preference must never interrupt a review.
+    }
+  }
   const [shareCopied, setShareCopied] = useState(false);
   const [controlsHost, setControlsHost] = useState<HTMLDivElement | null>(null);
   const options = useRef<HTMLDetailsElement>(null);
@@ -345,23 +369,30 @@ export function Review({ token }: { token: string }) {
     <div className="review-layout">
       <header className="review-header">
         <div className="review-project-heading">
-          <Link
-            href={data.canManage ? `/?workspace=${project.workspaceId}` : "/"}
-            className="icon-button"
-            aria-label={t("back")}
-          >
-            <ArrowLeft size={19} />
-          </Link>
-          <h1 title={project.name}>{project.name}</h1>
+          <Tooltip content={t("back")} side="bottom" asChild>
+            <Link
+              href={data.canManage ? `/?workspace=${project.workspaceId}` : "/"}
+              className="icon-button"
+              aria-label={t("back")}
+            >
+              <ArrowLeft size={19} />
+            </Link>
+          </Tooltip>
+          <Tooltip content={project.name} side="bottom" asChild>
+            <h1>{project.name}</h1>
+          </Tooltip>
           {readOnly && (
-            <span className="review-archived" title={t("archived")}>
-              <Archive size={15} />
-            </span>
+            <Tooltip content={t("archived")} side="bottom">
+              <span className="review-archived" aria-label={t("archived")}>
+                <Archive size={15} />
+              </span>
+            </Tooltip>
           )}
         </div>
         <div className="mode-switch" role="group" aria-label={t("mode")}>
           <button
             className={effectiveMode === "browse" ? "active" : ""}
+            aria-label={t("browse")}
             aria-pressed={effectiveMode === "browse"}
             disabled={busy}
             onClick={() => {
@@ -374,6 +405,7 @@ export function Review({ token }: { token: string }) {
           </button>
           <button
             className={effectiveMode === "comment" ? "active" : ""}
+            aria-label={t("comment")}
             aria-pressed={effectiveMode === "comment"}
             onClick={() => setMode("comment")}
             disabled={busy || readOnly}
@@ -383,50 +415,61 @@ export function Review({ token }: { token: string }) {
           </button>
         </div>
         <div className="review-header-actions">
-          <button
-            className="icon-button review-mobile-comments"
-            aria-label={t("showFeedback")}
-            aria-expanded={showSidebar}
-            onClick={() => setShowSidebar((value) => !value)}
-          >
-            <MessageCircle size={18} />
-          </button>
-          <button
-            className="button primary share-button"
-            onClick={() => setShare(true)}
-            disabled={readOnly}
-            title={readOnly ? t("shareArchived") : undefined}
-            aria-label={t("share")}
-          >
-            <Share2 size={15} />
-            <span>{t("share")}</span>
-          </button>
+          <Tooltip content={t(showSidebar ? "hideFeedback" : "showFeedback")} side="bottom" asChild>
+            <button
+              ref={sidebarToggle}
+              className="icon-button review-sidebar-toggle"
+              aria-label={t(showSidebar ? "hideFeedback" : "showFeedback")}
+              aria-expanded={showSidebar}
+              aria-controls="review-feedback"
+              onClick={() => toggleSidebar(!showSidebar)}
+            >
+              {showSidebar ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+            </button>
+          </Tooltip>
+          <Tooltip content={t(readOnly ? "shareArchived" : "share")} side="bottom">
+            <button
+              className="button primary share-button"
+              onClick={() => setShare(true)}
+              disabled={readOnly}
+              aria-label={t("share")}
+            >
+              <Share2 size={15} />
+              <span>{t("share")}</span>
+            </button>
+          </Tooltip>
           <details className="review-options" ref={options}>
-            <summary className="icon-button" aria-label={t("options")} title={t("options")}>
-              <MoreHorizontal size={21} />
-            </summary>
+            <Tooltip content={t("options")} side="bottom" asChild>
+              <summary className="icon-button" aria-label={t("options")}>
+                <MoreHorizontal size={21} />
+              </summary>
+            </Tooltip>
             <div className="review-options-panel">
               <div ref={setControlsHost} />
               {project.type === "website" && !readOnly && (
                 <div className="review-option-row">
                   <span>{t("viewport")}</span>
                   <div className="viewport-switch" role="group" aria-label={t("viewport")}>
-                    <button
-                      className={viewport === "desktop" ? "active" : ""}
-                      aria-label={t("desktop")}
-                      aria-pressed={viewport === "desktop"}
-                      onClick={() => setViewport("desktop")}
-                    >
-                      <Monitor size={17} />
-                    </button>
-                    <button
-                      className={viewport === "mobile" ? "active" : ""}
-                      aria-label={t("mobile")}
-                      aria-pressed={viewport === "mobile"}
-                      onClick={() => setViewport("mobile")}
-                    >
-                      <Smartphone size={16} />
-                    </button>
+                    <Tooltip content={t("desktop")} asChild>
+                      <button
+                        className={viewport === "desktop" ? "active" : ""}
+                        aria-label={t("desktop")}
+                        aria-pressed={viewport === "desktop"}
+                        onClick={() => setViewport("desktop")}
+                      >
+                        <Monitor size={17} />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content={t("mobile")} asChild>
+                      <button
+                        className={viewport === "mobile" ? "active" : ""}
+                        aria-label={t("mobile")}
+                        aria-pressed={viewport === "mobile"}
+                        onClick={() => setViewport("mobile")}
+                      >
+                        <Smartphone size={16} />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               )}
@@ -510,7 +553,13 @@ export function Review({ token }: { token: string }) {
             />
           )}
         </main>
-        <aside className="feedback-sidebar" aria-label={t("feedback")}>
+        <aside
+          id="review-feedback"
+          className="feedback-sidebar"
+          aria-label={t("feedback")}
+          inert={!showSidebar}
+          aria-hidden={!showSidebar}
+        >
           <div className="feedback-heading">
             <h2>
               {t("feedback")}
@@ -520,13 +569,15 @@ export function Review({ token }: { token: string }) {
               {data.canManage && openCount > 0 && filter !== "resolved" && (
                 <CopyPromptButton projectId={project.id} onError={setError} />
               )}
-              <button
-                className="icon-button review-mobile-comments"
-                aria-label={t("hideFeedback")}
-                onClick={() => setShowSidebar(false)}
-              >
-                <X size={17} />
-              </button>
+              <Tooltip content={t("hideFeedback")} asChild>
+                <button
+                  className="icon-button feedback-collapse"
+                  aria-label={t("hideFeedback")}
+                  onClick={() => toggleSidebar(false)}
+                >
+                  <PanelRightClose size={17} />
+                </button>
+              </Tooltip>
             </div>
           </div>
           <div className="feedback-filters">
@@ -563,15 +614,17 @@ export function Review({ token }: { token: string }) {
                     <MessageCircle size={15} />
                   </span>
                   <strong>{t("newComment")}</strong>
-                  <button
-                    className="icon-button"
-                    type="button"
-                    aria-label={t("cancelComment")}
-                    onClick={clearDraft}
-                    disabled={busy}
-                  >
-                    <X size={16} />
-                  </button>
+                  <Tooltip content={t("cancelComment")} asChild>
+                    <button
+                      className="icon-button"
+                      type="button"
+                      aria-label={t("cancelComment")}
+                      onClick={clearDraft}
+                      disabled={busy}
+                    >
+                      <X size={16} />
+                    </button>
+                  </Tooltip>
                 </div>
                 {pendingAnchor.type === "pdf" && (
                   <span className="anchor-location">
@@ -756,35 +809,15 @@ function FeedbackCard({
           <span className="feedback-author-name">{comment.author.name}</span>
           <ArrowUpRight size={13} />
         </button>
-        <div className="feedback-card-actions">
-          {canCopyPrompt && (
-            <CopyPromptButton
-              projectId={comment.projectId}
-              commentId={comment.id}
-              onError={onPromptError}
-            />
-          )}
-          {comment.screenshot && (
-            <CommentCapture
-              src={`/api/reviews/${token}/comments/${comment.id}/screenshot`}
-              pointX={comment.screenshot.pointX}
-              pointY={comment.screenshot.pointY}
-              number={comment.number}
-            />
-          )}
-          {canResolve && (
-            <button
-              className={`resolve-button ${comment.status === "resolved" ? "resolved" : ""}`}
-              aria-label={t(comment.status === "resolved" ? "reopenComment" : "resolveComment", {
-                number: comment.number,
-              })}
-              title={t(comment.status === "resolved" ? "reopen" : "resolve")}
-              onClick={onStatus}
-            >
-              {comment.status === "resolved" ? <CheckCircle2 size={19} /> : <Circle size={19} />}
-            </button>
-          )}
-        </div>
+        <FeedbackActions
+          comment={comment}
+          token={token}
+          canResolve={canResolve}
+          canCopyPrompt={canCopyPrompt}
+          onStatus={onStatus}
+          onSelect={onSelect}
+          onPromptError={onPromptError}
+        />
       </div>
       <button className="feedback-content" onClick={onSelect}>
         <span className="feedback-text">{comment.body}</span>

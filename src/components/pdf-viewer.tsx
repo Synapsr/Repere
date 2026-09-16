@@ -1,4 +1,5 @@
 "use client";
+import { Tooltip } from "./tooltip";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
@@ -192,16 +193,18 @@ export function PdfViewer({
         createPortal(
           <div className="pdf-menu-controls" aria-label={t("controls")}>
             <div className="pdf-pagination">
-              <button
-                className="icon-button"
-                aria-label={t("previous")}
-                disabled={pageNumber <= 1}
-                onClick={() => {
-                  setPageNumber((p) => p - 1);
-                }}
-              >
-                <ChevronLeft size={17} />
-              </button>
+              <Tooltip content={t("previous")}>
+                <button
+                  className="icon-button"
+                  aria-label={t("previous")}
+                  disabled={pageNumber <= 1}
+                  onClick={() => {
+                    setPageNumber((p) => p - 1);
+                  }}
+                >
+                  <ChevronLeft size={17} />
+                </button>
+              </Tooltip>
               <label>
                 {t("page")}{" "}
                 <input
@@ -219,39 +222,45 @@ export function PdfViewer({
                 />{" "}
                 {t("pageCount", { count: pdf?.numPages || "…" })}
               </label>
-              <button
-                className="icon-button"
-                aria-label={t("next")}
-                disabled={!pdf || pageNumber >= pdf.numPages}
-                onClick={() => {
-                  setPageNumber((p) => p + 1);
-                }}
-              >
-                <ChevronRight size={17} />
-              </button>
+              <Tooltip content={t("next")}>
+                <button
+                  className="icon-button"
+                  aria-label={t("next")}
+                  disabled={!pdf || pageNumber >= pdf.numPages}
+                  onClick={() => {
+                    setPageNumber((p) => p + 1);
+                  }}
+                >
+                  <ChevronRight size={17} />
+                </button>
+              </Tooltip>
             </div>
             <div className="pdf-zoom">
-              <button
-                className="icon-button"
-                aria-label={t("zoomOut")}
-                disabled={zoom <= 0.5}
-                onClick={() => {
-                  setZoom((z) => Math.max(0.5, z - 0.25));
-                }}
-              >
-                <Minus size={16} />
-              </button>
+              <Tooltip content={t("zoomOut")}>
+                <button
+                  className="icon-button"
+                  aria-label={t("zoomOut")}
+                  disabled={zoom <= 0.5}
+                  onClick={() => {
+                    setZoom((z) => Math.max(0.5, z - 0.25));
+                  }}
+                >
+                  <Minus size={16} />
+                </button>
+              </Tooltip>
               <span>{Math.round(zoom * 100)} %</span>
-              <button
-                className="icon-button"
-                aria-label={t("zoomIn")}
-                disabled={zoom >= 2}
-                onClick={() => {
-                  setZoom((z) => Math.min(2, z + 0.25));
-                }}
-              >
-                <Plus size={16} />
-              </button>
+              <Tooltip content={t("zoomIn")}>
+                <button
+                  className="icon-button"
+                  aria-label={t("zoomIn")}
+                  disabled={zoom >= 2}
+                  onClick={() => {
+                    setZoom((z) => Math.min(2, z + 0.25));
+                  }}
+                >
+                  <Plus size={16} />
+                </button>
+              </Tooltip>
             </div>
           </div>,
           controlsHost,

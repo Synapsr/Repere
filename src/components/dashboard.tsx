@@ -1,4 +1,5 @@
 "use client";
+import { Tooltip } from "./tooltip";
 import {
   Suspense,
   useEffect,
@@ -425,7 +426,9 @@ function WorkspaceDashboard({
             <Avatar name={user.name} />
             <div>
               <strong>{user.name}</strong>
-              <span title={user.email}>{user.email}</span>
+              <Tooltip content={user.email} asChild>
+                <span>{user.email}</span>
+              </Tooltip>
             </div>
             <button
               className="icon-button"
