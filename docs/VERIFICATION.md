@@ -2,6 +2,33 @@
 
 This page records observed checks, not compatibility promises. Test instructions are in [TESTING.md](TESTING.md).
 
+## Workspaces 0.2.0 — 16 September 2026
+
+Source revision [`7bf4877`](https://github.com/Synapsr/Repere/commit/7bf48770902cbb99e678e097105dc74413b7b32f) passed [CI run 35073047727](https://github.com/Synapsr/Repere/actions/runs/35073047727):
+
+- Dependency audit, ESLint, Prettier and TypeScript checks passed.
+- **133 unit and HTTP transport tests** passed across 17 files.
+- **35 integration scenarios** passed on the first attempt: 9 API, 13 Chromium and 13 Firefox. Two opt-in HTTPS cookie tests were skipped in this run; their earlier dedicated validation is recorded below.
+- Workspace tests cover concurrent first visits, creation order, project isolation, membership permissions, website/PDF creation, transfers preserving links and feedback, archived access and removal of a creator’s management rights after losing membership.
+- Browser journeys cover creation, switching, project moves, the return to the correct space, Back/Forward, reload, remembered selection, keyboard controls, mobile overflow and late responses from a previously selected workspace.
+- Disposable MySQL 8.4 tests applied the 0.1.1 migration, seeded projects and feedback, then upgraded. Existing IDs, sharing links, PDF metadata, comments, replies, attachments and sessions were preserved. An interrupted backfill resumed successfully; repeated execution and a fresh installation also passed.
+- Visual and keyboard checks passed at 320, 390, 768 and 1440 pixels in Chromium and Firefox without JavaScript errors.
+
+### Docker publication
+
+Tags `synapsr/repere:0.2.0`, `0.2` and `latest` were published from the same frozen `7bf4877` revision and returned this index through anonymous registry requests:
+
+```text
+sha256:84650557d9c9322500bc47e48dd0c3e4cd5828468535953e1cec22d22f3f333c
+```
+
+- Both Linux AMD64 and ARM64 images started with integrated MySQL, **11 tables including the migration journal**, and two applied migrations. Health checks, service identities and volume permissions passed.
+- Isolated container fixtures checked eight concurrent workspace bootstraps, stable creation order, project filtering, management rights and transfers preserving IDs and links. These packaging checks use synthetic database sessions; the integration suite above separately exercises real OTP delivery.
+- The published runtime manifests exactly match the tested images. Each architecture includes provenance and an SPDX software bill of materials. Anonymous reads confirmed both platforms, source/version labels and unchanged digests for the older `0.1`, `0.1.0` and `0.1.1` tags.
+- Restart and graceful shutdown checks passed. Only the disposable smoke containers and their volumes were removed.
+
+The application was deployed with a database backup and completed its startup migrations. The existing signed-in production session retained its projects in the migrated first workspace, and an existing website opened successfully through its HTTPS preview. No deployment environment variables or proxy/TLS settings were changed for this release.
+
 ## Docker Hub 0.1.1 — 15 September 2026
 
 Version **`0.1.1` was published** to [Docker Hub](https://hub.docker.com/r/synapsr/repere) from the frozen source revision [`8e15dded`](https://github.com/Synapsr/Repere/commit/8e15dded1c922333839022e27c1838e3154a261f). The tags **`0.1.1`**, **`0.1`** and **`latest`** returned this public multi-platform index:
@@ -29,7 +56,7 @@ Four focused scenarios passed in Chromium and Firefox (5.2 seconds, no OTP or pr
 
 The standard production Docker image compiled successfully with this correction. The published 0.1.1 image includes that source revision; the original 0.1.0 image predates it. These four UI checks and the two-architecture startup checks are separate validations; the full earlier integration suite is recorded in its own sections below.
 
-### Production checks still outstanding
+### Production checks recorded on 15 September
 
 A production email-send test was accepted by the configured SMTP service; **receipt in the destination inbox has not been confirmed**. At the time of this record, **wildcard TLS for the selected `*.repere.dev` preview route was not configured**. Local HTTPS isolation tests use a test certificate and do not establish public DNS, certificate issuance, renewal or successful production preview access.
 
@@ -37,7 +64,7 @@ A production email-send test was accepted by the configured SMTP service; **rece
 
 Version **`0.1.0` was published** to [Docker Hub](https://hub.docker.com/r/synapsr/repere) from the frozen source revision [`ef36f020b83851bc1430e83f901c7286e0cae7df`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). Changes made to `main` after that revision are not part of this image.
 
-At the first publication, tags **`0.1.0`**, **`0.1`** and **`latest`** returned this public multi-platform index. The immutable `0.1.0` tag still retains it; `0.1` and `latest` now identify 0.1.1:
+At the first publication, tags **`0.1.0`**, **`0.1`** and **`latest`** returned this public multi-platform index. The immutable `0.1.0` tag still retains it; `0.1` now identifies 0.1.1 and `latest` identifies 0.2.0:
 
 ```text
 sha256:860000ef8c3ce45f40aff05aacf33935eec7fc4bf4cae1fb83152e83558221fa

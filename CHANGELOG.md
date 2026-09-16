@@ -1,8 +1,16 @@
 # Changelog
 
-This file records user-visible changes. Container version `0.1.1` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
+This file records user-visible changes. Container version `0.2.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
-## Unreleased
+## 0.2.0 — 2026-09-16
+
+Published from [`7bf4877`](https://github.com/Synapsr/Repere/commit/7bf48770902cbb99e678e097105dc74413b7b32f). Tags `0.2.0`, `0.2` and `latest` identify this AMD64/ARM64 index:
+
+```text
+sha256:84650557d9c9322500bc47e48dd0c3e4cd5828468535953e1cec22d22f3f333c
+```
+
+**Upgrade:** back up MySQL and uploads, then stop the previous app before applying migrations. No new environment variables are required. Project clients now use `workspaceId` and `canManage` instead of `ownerId` and `isOwner`.
 
 ### Added
 
@@ -13,7 +21,7 @@ This file records user-visible changes. Container version `0.1.1` is available o
 
 ## 0.1.1 — 2026-09-15
 
-The published image was built from [`8e15dded`](https://github.com/Synapsr/Repere/commit/8e15dded1c922333839022e27c1838e3154a261f). Tags `0.1.1`, `0.1` and `latest` identify this AMD64/ARM64 index:
+The published image was built from [`8e15dded`](https://github.com/Synapsr/Repere/commit/8e15dded1c922333839022e27c1838e3154a261f). Tags `0.1.1` and `0.1` retain this AMD64/ARM64 index; `latest` now points to 0.2.0:
 
 ```text
 sha256:4701bf47e44a7ec46bc4d0e54940f9d9a51b26f9297193a9eb341740900f8e42
@@ -25,7 +33,7 @@ sha256:4701bf47e44a7ec46bc4d0e54940f9d9a51b26f9297193a9eb341740900f8e42
 
 ## 0.1.0 — 2026-09-15
 
-The published image was built from [`ef36f020`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). The immutable `0.1.0` tag retains this AMD64/ARM64 index; the `0.1` and `latest` aliases have moved to 0.1.1:
+The published image was built from [`ef36f020`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). The immutable `0.1.0` tag retains this AMD64/ARM64 index; the `0.1` alias now points to 0.1.1 and `latest` to 0.2.0:
 
 ```text
 sha256:860000ef8c3ce45f40aff05aacf33935eec7fc4bf4cae1fb83152e83558221fa

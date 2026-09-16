@@ -63,7 +63,7 @@ Le code ne comporte ni formules tarifaires ni frais par participant. L'hébergem
 
 L'image `synapsr/repere` réunit l'application, le service d'aperçu natif et **MySQL 8.4 dans un seul conteneur**. Elle génère et conserve ses secrets, initialise la base et applique les migrations automatiquement. Seul Docker est nécessaire sur votre machine.
 
-**[La version 0.1.1 est disponible sur Docker Hub](https://hub.docker.com/r/synapsr/repere)** pour Linux AMD64 et ARM64. Les deux variantes ont démarré avec MySQL intégré et ont été téléchargées sans authentification après publication ; voir le [compte rendu de vérification](docs/VERIFICATION.md#docker-hub-011--15-september-2026).
+**[La version 0.2.0 est disponible sur Docker Hub](https://hub.docker.com/r/synapsr/repere)** pour Linux AMD64 et ARM64. Les deux variantes ont démarré avec MySQL intégré et leurs manifests publics ont été vérifiés sans authentification après publication ; voir le [compte rendu de vérification](docs/VERIFICATION.md#workspaces-020--16-september-2026).
 
 Créez `.env.docker` avec les paramètres de votre fournisseur SMTP : la connexion nécessite de recevoir un code par email.
 
@@ -83,7 +83,7 @@ docker run -d --name repere --restart unless-stopped \
   -p 8080:8080 --stop-timeout 40 \
   -v repere-data:/data \
   --env-file .env.docker \
-  synapsr/repere:0.1.1
+  synapsr/repere:0.2.0
 ```
 
 Ouvrez [localhost:8080](http://localhost:8080). Conservez le volume **`/data`** : il contient la base, les PDF et les secrets générés. Utilisez une version publiée précise ou un digest pour des déploiements reproductibles. Une [base MySQL externe](docs/DOCKER.md#external-mysql) reste possible.
