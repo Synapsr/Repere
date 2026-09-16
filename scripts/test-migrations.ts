@@ -153,8 +153,24 @@ async function main() {
       "INSERT INTO sessions (tokenHash,userId,expiresAt) VALUES (?,?,DATE_ADD(NOW(), INTERVAL 1 DAY))",
       [randomBytes(32).toString("hex"), owner],
     );
+    await connection.query(
+      "INSERT INTO otp_challenges (email,codeHash,name,attempts,expiresAt) VALUES (?,?,?,2,DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
+      ["pending@example.test", randomBytes(32).toString("hex"), "Pending reviewer"],
+    );
+    await connection.query(
+      "INSERT INTO rate_limits (`key`,count,expiresAt) VALUES (?,3,DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
+      [randomBytes(32).toString("hex")],
+    );
 
-    const tables = ["users", "comments", "replies", "attachments", "sessions"];
+    const tables = [
+      "users",
+      "comments",
+      "replies",
+      "attachments",
+      "sessions",
+      "otp_challenges",
+      "rate_limits",
+    ];
     const before = new Map<string, RowDataPacket[]>();
     for (const table of tables) before.set(table, await rows(`SELECT * FROM ${table}`));
     const projectBefore = await rows("SELECT * FROM projects ORDER BY id");
@@ -240,7 +256,16 @@ async function main() {
       .filter(Boolean);
     // Resume after MySQL commits the invitation DDL but before Drizzle journals it.
     for (const statement of invitationSql) await connection.query(statement);
-    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    // Keep this checkpoint at the released 0.3.0 schema, even after new migrations appear.
+    await writeFile(
+      path.join(temporary, "meta/_journal.json"),
+      JSON.stringify({ ...journal, entries: journal.entries.slice(0, 3) }),
+    );
+    await writeFile(
+      path.join(temporary, `${invitationMigration.tag}.sql`),
+      await readFile(`drizzle/${invitationMigration.tag}.sql`),
+    );
+    await migrate(drizzle({ client: connection }), { migrationsFolder: temporary });
     for (const table of existingTables)
       assert.deepEqual(
         await rows(`SELECT * FROM ${table}`),
@@ -248,15 +273,136 @@ async function main() {
         `${table} must survive the 0.2.0 invitation upgrade unchanged`,
       );
     await connection.query(
-      "INSERT INTO workspace_invitations (id,workspaceId,email,inviterId,tokenHash,expiresAt) VALUES (?,?,?,?,?,DATE_ADD(NOW(), INTERVAL 7 DAY))",
-      [randomUUID(), owner, "invitee@example.test", owner, randomBytes(32).toString("hex")],
+      "INSERT INTO workspace_invitations (id,workspaceId,email,inviterId,tokenHash,pendingTokenHash,pendingStartedAt,expiresAt) VALUES (?,?,?,?,?,?,NOW(3),DATE_ADD(NOW(), INTERVAL 7 DAY))",
+      [
+        randomUUID(),
+        owner,
+        "invitee@example.test",
+        owner,
+        randomBytes(32).toString("hex"),
+        randomBytes(32).toString("hex"),
+      ],
     );
-    const invitations = await rows("SELECT * FROM workspace_invitations");
+    await connection.query(
+      "INSERT INTO workspace_invitations (id,workspaceId,email,inviterId,tokenHash,expiresAt,acceptedAt,revokedAt) VALUES (?,?,?,?,?,DATE_ADD(NOW(), INTERVAL 7 DAY),NOW(3),NULL),(?,?,?,?,?,DATE_ADD(NOW(), INTERVAL 7 DAY),NULL,NOW(3))",
+      [
+        randomUUID(),
+        owner,
+        "accepted@example.test",
+        owner,
+        randomBytes(32).toString("hex"),
+        randomUUID(),
+        owner,
+        "revoked@example.test",
+        owner,
+        randomBytes(32).toString("hex"),
+      ],
+    );
+    const invitations = await rows("SELECT * FROM workspace_invitations ORDER BY id");
     for (const statement of invitationSql) await connection.query(statement);
-    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
-    assert.deepEqual(await rows("SELECT * FROM workspace_invitations"), invitations);
+    await migrate(drizzle({ client: connection }), { migrationsFolder: temporary });
+    assert.deepEqual(await rows("SELECT * FROM workspace_invitations ORDER BY id"), invitations);
     console.info(
       "PASS: upgrade from 0.2.0 preserves workspaces, members and all existing data; interrupted invitation migration resumes without losing invitations.",
+    );
+
+    const beforeScreenshots = new Map<string, RowDataPacket[]>();
+    for (const table of [...existingTables, "workspace_invitations"])
+      beforeScreenshots.set(table, await rows(`SELECT * FROM ${table}`));
+    assert.ok(
+      !(await rows("SHOW TABLES")).some((row) => Object.values(row)[0] === "comment_screenshots"),
+      "The 0.3.0 checkpoint must not apply the screenshot migration early",
+    );
+    const screenshotMigration = journal.entries[3];
+    assert.equal(screenshotMigration?.tag, "0003_comment_screenshots");
+    const screenshotSql = (await readFile(`drizzle/${screenshotMigration.tag}.sql`, "utf8"))
+      .split("--> statement-breakpoint")
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+    const migrationJournalBefore = await rows("SELECT * FROM __drizzle_migrations ORDER BY id");
+    assert.equal(migrationJournalBefore.length, 3);
+    // Stop after committed DDL but before its journal entry. Metadata that already
+    // exists on the next startup must survive both replay and later normal starts.
+    for (const statement of screenshotSql) await connection.query(statement);
+    const screenshotValues = [
+      comment,
+      `${randomUUID()}.jpg`,
+      12345,
+      1280,
+      800,
+      0.25,
+      0.75,
+      new Date("2040-01-02T03:04:05.678Z"),
+    ];
+    const insertScreenshot =
+      "INSERT INTO comment_screenshots (commentId,storageKey,byteSize,width,height,pointX,pointY,capturedAt) VALUES (?,?,?,?,?,?,?,?)";
+    await connection.execute(insertScreenshot, screenshotValues);
+    const screenshots = await rows("SELECT * FROM comment_screenshots ORDER BY commentId");
+    assert.deepEqual(
+      await rows("SELECT * FROM __drizzle_migrations ORDER BY id"),
+      migrationJournalBefore,
+      "The interrupted screenshot fixture must have no completed migration journal entry",
+    );
+    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    for (const [table, expected] of beforeScreenshots)
+      assert.deepEqual(
+        await rows(`SELECT * FROM ${table}`),
+        expected,
+        `${table} must survive the 0.3.0 screenshot upgrade unchanged`,
+      );
+    assert.deepEqual(
+      await rows("SELECT * FROM comment_screenshots ORDER BY commentId"),
+      screenshots,
+    );
+    await assert.rejects(connection.execute(insertScreenshot, screenshotValues), {
+      code: "ER_DUP_ENTRY",
+    });
+    await assert.rejects(
+      connection.execute(insertScreenshot, [randomUUID(), ...screenshotValues.slice(1)]),
+      { code: "ER_NO_REFERENCED_ROW_2" },
+    );
+    const cascadeComment = randomUUID();
+    await connection.beginTransaction();
+    try {
+      await connection.execute(
+        "INSERT INTO comments (id,projectId,authorId,number,body,anchor) VALUES (?,?,?,2,?,?)",
+        [
+          cascadeComment,
+          website,
+          guest,
+          "Disposable cascade probe",
+          JSON.stringify({ type: "pdf", page: 1, x: 0.5, y: 0.5 }),
+        ],
+      );
+      await connection.execute(insertScreenshot, [cascadeComment, ...screenshotValues.slice(1)]);
+      await connection.execute("DELETE FROM comments WHERE id=?", [cascadeComment]);
+      const [remaining] = await connection.execute<RowDataPacket[]>(
+        "SELECT commentId FROM comment_screenshots WHERE commentId=?",
+        [cascadeComment],
+      );
+      assert.equal(
+        remaining.length,
+        0,
+        "Deleting a comment must cascade to its screenshot metadata",
+      );
+    } finally {
+      await connection.rollback();
+    }
+    for (const statement of screenshotSql) await connection.query(statement);
+    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    assert.deepEqual(
+      await rows("SELECT * FROM comment_screenshots ORDER BY commentId"),
+      screenshots,
+    );
+    for (const [table, expected] of beforeScreenshots)
+      assert.deepEqual(await rows(`SELECT * FROM ${table}`), expected);
+    assert.equal(
+      (await rows("SELECT * FROM __drizzle_migrations")).length,
+      journal.entries.length,
+      "Replay must record each migration once",
+    );
+    console.info(
+      "PASS: upgrade from 0.3.0 preserves all existing data and invitations; interrupted screenshot migration resumes with metadata intact, unique comment binding and enforced cascading foreign key.",
     );
 
     await connection.query("CREATE DATABASE fresh_fixture");
@@ -275,6 +421,7 @@ async function main() {
       "workspaces",
       "workspace_members",
       "workspace_invitations",
+      "comment_screenshots",
       "projects",
       ...tables,
     ])

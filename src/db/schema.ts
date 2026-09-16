@@ -1,5 +1,7 @@
 import {
   boolean,
+  datetime,
+  double,
   index,
   int,
   json,
@@ -174,6 +176,20 @@ export const comments = mysqlTable(
     index("comments_author_idx").on(t.authorId),
   ],
 );
+
+export const commentScreenshots = mysqlTable("comment_screenshots", {
+  commentId: id()
+    .primaryKey()
+    .references(() => comments.id, { onDelete: "cascade" }),
+  storageKey: varchar({ length: 80 }).notNull(),
+  byteSize: int({ unsigned: true }).notNull(),
+  width: int({ unsigned: true }).notNull(),
+  height: int({ unsigned: true }).notNull(),
+  pointX: double().notNull(),
+  pointY: double().notNull(),
+  capturedAt: datetime({ mode: "date", fsp: 3 }).notNull(),
+  createdAt: createdAt(),
+});
 
 export const replies = mysqlTable(
   "replies",

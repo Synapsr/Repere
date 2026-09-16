@@ -3,9 +3,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, ArrowRight, RotateCw, ExternalLink, Link2 } from "lucide-react";
-import type { Feedback, WebsiteAnchor } from "../../shared/types";
+import type { CaptureInput, Feedback, WebsiteAnchor } from "../../shared/types";
 import type { PreviewCommand, PreviewEvent, PreviewSession } from "../../shared/preview";
 import { parseWebsiteAnchorForOrigin } from "../../shared/validation";
+import { parseCaptureInput } from "../../shared/capture";
 import { api } from "@/lib/client";
 import { Spinner } from "./ui";
 
@@ -17,7 +18,8 @@ type Props = {
   mode: "browse" | "comment";
   comments: Feedback[];
   draft: WebsiteAnchor | null;
-  onAnchor: (anchor: WebsiteAnchor) => void;
+  onAnchor: (anchor: WebsiteAnchor, captureId: string | null) => boolean;
+  onCapture: (captureId: string, capture: CaptureInput | null) => void;
   selected: string | null;
   onSelect: (id: string) => void;
   focus: Feedback | null;
@@ -37,6 +39,7 @@ export function WebsiteViewer({
   comments,
   draft,
   onAnchor,
+  onCapture,
   selected,
   onSelect,
   focus,
@@ -59,6 +62,8 @@ export function WebsiteViewer({
   const readinessTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callbacks = useRef({
     onAnchor,
+    onCapture,
+    draft,
     onSelect,
     mode,
     commentIds: new Set(comments.map((comment) => comment.id)),
@@ -66,11 +71,13 @@ export function WebsiteViewer({
   useEffect(() => {
     callbacks.current = {
       onAnchor,
+      onCapture,
+      draft,
       onSelect,
       mode,
       commentIds: new Set(comments.map((comment) => comment.id)),
     };
-  }, [onAnchor, onSelect, mode, comments]);
+  }, [onAnchor, onCapture, draft, onSelect, mode, comments]);
   const clearReadinessTimeout = useCallback(() => {
     if (readinessTimer.current) clearTimeout(readinessTimer.current);
     readinessTimer.current = null;
@@ -152,7 +159,24 @@ export function WebsiteViewer({
       }
       if (message.type === "anchor" && callbacks.current.mode === "comment") {
         const anchor = parseWebsiteAnchorForOrigin(message.anchor, session!.targetUrl);
-        if (anchor) callbacks.current.onAnchor(anchor);
+        if (anchor) {
+          const accepted = callbacks.current.onAnchor(
+            anchor,
+            typeof message.captureId === "string" && /^[a-zA-Z0-9-]{1,64}$/.test(message.captureId)
+              ? message.captureId
+              : null,
+          );
+          // A slow submission can reject a new point. Restore the existing pin
+          // immediately so a failed POST never leaves its draft at another place.
+          if (!accepted) send({ type: "draft", anchor: callbacks.current.draft });
+        }
+      }
+      if (
+        message.type === "capture" &&
+        typeof message.captureId === "string" &&
+        message.captureId.length <= 64
+      ) {
+        callbacks.current.onCapture(message.captureId, parseCaptureInput(message.capture));
       }
       if (
         message.type === "select" &&
@@ -171,7 +195,7 @@ export function WebsiteViewer({
     return () => {
       window.removeEventListener("message", receive);
     };
-  }, [session, clearReadinessTimeout]);
+  }, [session, clearReadinessTimeout, send]);
   useEffect(() => {
     if (status === "ready") send({ type: "mode", mode });
   }, [mode, send, status, currentUrl, readyEpoch]);

@@ -28,12 +28,13 @@ import {
   MoreHorizontal,
   CircleHelp,
 } from "lucide-react";
-import type { Anchor, Feedback, ReviewData, Workspace } from "../../shared/types";
+import type { Anchor, CaptureInput, Feedback, ReviewData, Workspace } from "../../shared/types";
 import { api, relativeDate } from "@/lib/client";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Logo, Avatar, Modal, Spinner, ErrorBanner } from "./ui";
 import { AuthForm } from "./auth";
 import { WebsiteViewer } from "./website-viewer";
+import { CommentCapture } from "./comment-capture";
 import { ReviewOnboarding } from "./review-onboarding";
 import "./review.css";
 
@@ -50,6 +51,11 @@ const PdfViewer = dynamic(() => import("./pdf-viewer").then((m) => m.PdfViewer),
   loading: PdfLoading,
 });
 
+type DraftCapture =
+  | { status: "pending"; id: string }
+  | { status: "ready"; id: string; value: CaptureInput }
+  | { status: "failed"; id: string | null };
+
 export function Review({ token }: { token: string }) {
   const t = useTranslations("review");
   const [data, setData] = useState<ReviewData | null>(null);
@@ -59,6 +65,24 @@ export function Review({ token }: { token: string }) {
   const [focus, setFocus] = useState<Feedback | null>(null);
   const [filter, setFilter] = useState<"open" | "resolved" | "all">("open");
   const [pendingAnchor, setPendingAnchor] = useState<Anchor | null>(null);
+  const [capture, setCapture] = useState<DraftCapture | null>(null);
+  const captureId = useRef<string | null>(null);
+  const captureTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const submitting = useRef(false);
+  const clearDraft = useCallback(() => {
+    captureId.current = null;
+    if (captureTimer.current) clearTimeout(captureTimer.current);
+    captureTimer.current = null;
+    setPendingAnchor(null);
+    setCapture(null);
+  }, []);
+  useEffect(
+    () => () => {
+      captureId.current = null;
+      if (captureTimer.current) clearTimeout(captureTimer.current);
+    },
+    [],
+  );
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
   const [share, setShare] = useState(false);
@@ -75,11 +99,11 @@ export function Review({ token }: { token: string }) {
     setData(next);
     if (next.project.archived) {
       setMode("browse");
-      setPendingAnchor(null);
+      clearDraft();
       setBody("");
     }
     return next;
-  }, [token]);
+  }, [token, clearDraft]);
   useEffect(() => {
     let active = true;
     async function load() {
@@ -126,22 +150,46 @@ export function Review({ token }: { token: string }) {
   }, []);
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (data?.project.archived || !pendingAnchor || !body.trim()) return;
+    if (
+      submitting.current ||
+      data?.project.archived ||
+      !pendingAnchor ||
+      !body.trim() ||
+      !capture ||
+      capture.status === "pending"
+    )
+      return;
+    submitting.current = true;
     setBusy(true);
     setError("");
     try {
       const { comment } = await api<{ comment: Feedback }>(`/api/reviews/${token}/comments`, {
         method: "POST",
-        body: JSON.stringify({ body: body.trim(), anchor: pendingAnchor }),
+        body: JSON.stringify({
+          body: body.trim(),
+          anchor: pendingAnchor,
+          ...(capture.status === "ready" ? { capture: capture.value } : {}),
+        }),
       });
-      await refresh();
+      // The POST committed both records. A later refresh failure must not leave a
+      // publishable draft that would duplicate the comment and its image.
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              comments: [...current.comments.filter((item) => item.id !== comment.id), comment],
+            }
+          : current,
+      );
       setSelected(comment.id);
       setBody("");
-      setPendingAnchor(null);
+      clearDraft();
       setFilter("open");
+      void refresh().catch(() => {});
     } catch (e) {
       setError(e instanceof Error ? e.message : t("sendFailed"));
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }
@@ -167,12 +215,24 @@ export function Review({ token }: { token: string }) {
       if (filter !== "all" && filter !== comment.status) setFilter(comment.status);
     }
   }
-  function anchor(value: Anchor) {
-    if (data?.project.archived) return;
+  function receivedCapture(id: string, value: CaptureInput | null) {
+    if (captureId.current !== id) return;
+    captureId.current = null;
+    if (captureTimer.current) clearTimeout(captureTimer.current);
+    captureTimer.current = null;
+    setCapture(value ? { status: "ready", id, value } : { status: "failed", id });
+  }
+  function anchor(value: Anchor, id: string | null) {
+    if (data?.project.archived || submitting.current) return false;
+    if (captureTimer.current) clearTimeout(captureTimer.current);
+    captureId.current = id;
+    setCapture(id ? { status: "pending", id } : { status: "failed", id });
+    if (id) captureTimer.current = setTimeout(() => receivedCapture(id, null), 15_000);
     setPendingAnchor(value);
     setShowSidebar(true);
     setSelected(null);
     setError("");
+    return true;
   }
   if (!data)
     return (
@@ -253,9 +313,10 @@ export function Review({ token }: { token: string }) {
           <button
             className={effectiveMode === "browse" ? "active" : ""}
             aria-pressed={effectiveMode === "browse"}
+            disabled={busy}
             onClick={() => {
               setMode("browse");
-              setPendingAnchor(null);
+              clearDraft();
             }}
           >
             <MousePointer2 size={15} />
@@ -265,7 +326,7 @@ export function Review({ token }: { token: string }) {
             className={effectiveMode === "comment" ? "active" : ""}
             aria-pressed={effectiveMode === "comment"}
             onClick={() => setMode("comment")}
-            disabled={readOnly}
+            disabled={busy || readOnly}
           >
             <MessageCirclePlus size={15} />
             <span>{t("comment")}</span>
@@ -372,6 +433,7 @@ export function Review({ token }: { token: string }) {
               comments={comments}
               draft={pendingAnchor?.type === "website" ? pendingAnchor : null}
               onAnchor={anchor}
+              onCapture={receivedCapture}
               selected={selected}
               onSelect={choose}
               focus={focus}
@@ -384,6 +446,7 @@ export function Review({ token }: { token: string }) {
               mode={effectiveMode}
               comments={comments}
               onAnchor={anchor}
+              onCapture={receivedCapture}
               selected={selected}
               onSelect={choose}
               focus={focus}
@@ -443,7 +506,8 @@ export function Review({ token }: { token: string }) {
                     className="icon-button"
                     type="button"
                     aria-label={t("cancelComment")}
-                    onClick={() => setPendingAnchor(null)}
+                    onClick={clearDraft}
+                    disabled={busy}
                   >
                     <X size={16} />
                   </button>
@@ -463,14 +527,34 @@ export function Review({ token }: { token: string }) {
                   autoFocus
                   required
                 />
+                {capture?.status === "pending" && (
+                  <div className="capture-notice" role="status">
+                    <Spinner label={t("capturePending")} />
+                  </div>
+                )}
+                {capture?.status === "failed" && (
+                  <p className="capture-notice" role="status">
+                    {t("captureFailed")}
+                  </p>
+                )}
+                {capture?.status === "ready" && (
+                  <CommentCapture
+                    src={capture.value.dataUrl}
+                    pointX={capture.value.pointX}
+                    pointY={capture.value.pointY}
+                  />
+                )}
                 <div className="new-feedback-footer">
                   <Avatar name={data.user.name} size="small" />
-                  <button className="button primary" disabled={busy || !body.trim()}>
+                  <button
+                    className="button primary"
+                    disabled={busy || !body.trim() || !capture || capture.status === "pending"}
+                  >
                     {busy ? (
                       <Spinner label={t("sending")} />
                     ) : (
                       <>
-                        {t("publish")}
+                        {t(capture?.status === "failed" ? "publishWithoutCapture" : "publish")}
                         <Send size={14} />
                       </>
                     )}
@@ -640,6 +724,14 @@ function FeedbackCard({
       <button className="feedback-content" onClick={onSelect}>
         <span className="feedback-text">{comment.body}</span>
       </button>
+      {comment.screenshot && (
+        <CommentCapture
+          src={`/api/reviews/${token}/comments/${comment.id}/screenshot`}
+          pointX={comment.screenshot.pointX}
+          pointY={comment.screenshot.pointY}
+          number={comment.number}
+        />
+      )}
       <div className="feedback-card-meta">
         <time dateTime={comment.createdAt}>{relativeDate(comment.createdAt, locale)}</time>
         <button className="reply-expand" onClick={onSelect}>

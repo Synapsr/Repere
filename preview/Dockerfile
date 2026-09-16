@@ -22,6 +22,11 @@ COPY --from=build --chown=node:node /app/node_modules/dotenv/LICENSE /app/licens
 COPY --from=build --chown=node:node /app/node_modules/parse5/LICENSE /app/licenses/parse5.LICENSE.txt
 COPY --from=build --chown=node:node /app/node_modules/entities/LICENSE /app/licenses/entities.LICENSE.txt
 COPY --from=build --chown=node:node /app/node_modules/ipaddr.js/LICENSE /app/licenses/ipaddr.js.LICENSE.txt
+COPY --from=build --chown=node:node /app/node_modules/html2canvas-pro/LICENSE /app/licenses/html2canvas-pro.LICENSE.txt
+COPY --from=build --chown=node:node /app/node_modules/css-line-break/LICENSE /app/licenses/css-line-break.LICENSE.txt
+COPY --from=build --chown=node:node /app/node_modules/text-segmentation/LICENSE /app/licenses/text-segmentation.LICENSE.txt
+COPY --from=build --chown=node:node /app/node_modules/utrie/LICENSE /app/licenses/utrie.LICENSE.txt
+COPY --from=build --chown=node:node /app/node_modules/base64-arraybuffer/LICENSE /app/licenses/base64-arraybuffer.LICENSE.txt
 USER node
 EXPOSE 3001
 CMD ["node", "server.mjs"]

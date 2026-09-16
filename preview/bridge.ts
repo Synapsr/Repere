@@ -2,6 +2,8 @@ import type { PreviewCommand, PreviewConfig, PreviewPin } from "../shared/previe
 import type { WebsiteAnchor } from "../shared/types";
 import { previewLocale, previewMessage, previewPinLabel, type PreviewMessageKey } from "./messages";
 import { ADD_COMMENT_CURSOR, COMMENT_CURSOR } from "./cursor";
+import { captureViewport } from "./capture";
+import { newCaptureId } from "../shared/capture-canvas";
 
 // This file is independently authored. It runs inside the isolated preview document,
 // never in the Repère application origin. No session cookie or API token enters here.
@@ -184,6 +186,7 @@ function initialize(config: PreviewConfig) {
   let scheduled = false;
   let lastUrl = originalUrl();
   let hovered: Element | null = null;
+  let activeCapture: AbortController | null = null;
   const pinElements = new Map<string, HTMLButtonElement>();
   const focusKey = `repere-focus:${config.channel}`;
   const cursorStyle = document.createElement("style");
@@ -457,11 +460,41 @@ function initialize(config: PreviewConfig) {
       if (mode === "comment") {
         event.preventDefault();
         event.stopImmediatePropagation();
+        const capturedAt = new Date().toISOString();
+        const captureId = newCaptureId();
         draft = capture(element, event.clientX, event.clientY);
+        activeCapture?.abort();
+        const controller = new AbortController();
+        activeCapture = controller;
+        // Start the synchronous snapshot before the parent opens its composer and
+        // potentially resizes this viewport. Delivery is asynchronous and ID-bound.
+        const pendingCapture = captureViewport(
+          { x: event.clientX, y: event.clientY, capturedAt },
+          controller.signal,
+        );
         parent.postMessage(
-          { source: "repere-preview", channel: config.channel, type: "anchor", anchor: draft },
+          {
+            source: "repere-preview",
+            channel: config.channel,
+            type: "anchor",
+            anchor: draft,
+            captureId,
+          },
           config.appOrigin,
         );
+        void pendingCapture.then((capture) => {
+          if (activeCapture === controller) activeCapture = null;
+          parent.postMessage(
+            {
+              source: "repere-preview",
+              channel: config.channel,
+              type: "capture",
+              captureId,
+              capture,
+            },
+            config.appOrigin,
+          );
+        });
         schedule();
         return;
       }
@@ -499,6 +532,7 @@ function initialize(config: PreviewConfig) {
   );
   window.addEventListener("scroll", schedule, { capture: true, passive: true });
   window.addEventListener("resize", schedule, { passive: true });
+  window.addEventListener("pagehide", () => activeCapture?.abort());
   window.addEventListener("popstate", () => {
     reportLocation();
     schedule();

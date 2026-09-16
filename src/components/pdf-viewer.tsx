@@ -4,13 +4,15 @@ import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
-import type { Feedback, PdfAnchor } from "../../shared/types";
+import type { CaptureInput, Feedback, PdfAnchor } from "../../shared/types";
+import { encodeCapture, newCaptureId } from "../../shared/capture-canvas";
 import { Spinner, ErrorBanner } from "./ui";
 export function PdfViewer({
   token,
   mode,
   comments,
   onAnchor,
+  onCapture,
   selected,
   onSelect,
   focus,
@@ -19,7 +21,8 @@ export function PdfViewer({
   token: string;
   mode: "browse" | "comment";
   comments: Feedback[];
-  onAnchor: (a: PdfAnchor) => void;
+  onAnchor: (a: PdfAnchor, captureId: string | null) => void;
+  onCapture: (captureId: string, capture: CaptureInput | null) => void;
   selected: string | null;
   onSelect: (id: string) => void;
   focus: Feedback | null;
@@ -215,12 +218,22 @@ export function PdfViewer({
           onClick={(e) => {
             if (mode !== "comment" || !ready) return;
             const rect = e.currentTarget.getBoundingClientRect();
-            onAnchor({
-              type: "pdf",
-              page: pageNumber,
-              x: (e.clientX - rect.left) / rect.width,
-              y: (e.clientY - rect.top) / rect.height,
-            });
+            if (!canvas.current) return;
+            const point = {
+              pointX: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
+              pointY: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)),
+              capturedAt: new Date().toISOString(),
+            };
+            const captureId = newCaptureId();
+            const capture = encodeCapture(canvas.current, point);
+            onAnchor(
+              { type: "pdf", page: pageNumber, x: point.pointX, y: point.pointY },
+              captureId,
+            );
+            void capture.then(
+              (value) => onCapture(captureId, value),
+              () => onCapture(captureId, null),
+            );
           }}
         >
           <canvas ref={canvas} aria-label={t("canvas", { number: pageNumber })} />

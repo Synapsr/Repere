@@ -114,3 +114,19 @@ Services do not log SQL parameters, comments, OTP codes or sharing tokens. API r
 ## Future content types
 
 `comments.kind` reserves `audio` and `text-suggestion`; `originalText` and `suggestedText` can store replacement proposals. `attachments` reserves MIME type, size, audio duration, transcription, transcription state and provider. The current API does not create these content types. Existing anchors and fallback coordinates can be reused by those future workflows.
+
+## Comment screenshots
+
+`POST /api/reviews/:token/comments` accepts an optional `capture` object containing a
+JPEG `dataUrl`, an ISO `capturedAt`, and `pointX`/`pointY` fractions. Only this JSON route
+allows up to 3 MiB; decoded JPEGs are limited to 2 MiB, 4096 pixels per side and 8 million
+pixels. The server validates and re-encodes them with Sharp, removing embedded metadata.
+
+The comment and its `comment_screenshots` metadata commit in one MySQL transaction.
+Files use random names in the private `UPLOAD_DIR/captures` directory; a failed transaction
+removes the prepared file. Cancelled drafts never reach the server. Back up uploads and
+MySQL together. Old comments have no screenshot and remain compatible.
+
+`GET /api/reviews/:token/comments/:id/screenshot` requires a signed-in user, a current
+review token and a comment in that project. Archived projects remain available to workspace
+members only. Responses are private, uncached JPEGs; storage paths are never exposed.

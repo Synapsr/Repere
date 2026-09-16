@@ -2,6 +2,17 @@
 
 This file records user-visible changes. Container version `0.3.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
+## 0.4.0 — 2026-09-16
+
+- Capture the visible website state when placing a point, before typing or publishing. PDF points capture the currently rendered page.
+- Keep a private screenshot with each new comment, with a positioned marker and an expandable thumbnail. Cancelled drafts do not upload images.
+- Save comments and screenshot metadata together. Validate and re-encode JPEGs, limit uploads, and protect image access with the same login and review-link rules as feedback.
+- Show an explicit option to publish without an image if capture fails. Existing comments remain readable without screenshots.
+
+**Upgrade:** back up MySQL and uploads, then deploy both the app and preview service. Startup applies the additive screenshot migration. No new environment variables are needed; images are stored under `UPLOAD_DIR/captures`.
+
+**Rendering limits:** website images are reconstructed from the current browser DOM. Cross-origin media, embedded frames and some CSS effects may be missing or differ from the live view. PDFs use their existing rendered canvas. This is contextual evidence, not a guarantee of pixel-perfect rendering for every website.
+
 ## 0.3.0 — 2026-09-16
 
 Published from [`f655468`](https://github.com/Synapsr/Repere/commit/f655468e73e61b6049345f97a91e1d3f54e1868b). Tags `0.3.0`, `0.3` and `latest` identify this AMD64/ARM64 index:

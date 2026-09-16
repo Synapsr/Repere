@@ -56,5 +56,9 @@
   "INVITATION_UNAVAILABLE": "Cette invitation a expiré, a été annulée ou n’est plus disponible.",
   "INVITATION_EMAIL_MISMATCH": "Connectez-vous avec l’adresse email qui a reçu cette invitation.",
   "INVITATION_SEND_IN_PROGRESS": "Une invitation est déjà en cours d’envoi. Veuillez patienter un instant.",
-  "INVITATION_CHANGED": "Cette invitation a changé pendant l’envoi de l’email. Veuillez réessayer."
+  "INVITATION_CHANGED": "Cette invitation a changé pendant l’envoi de l’email. Veuillez réessayer.",
+  "CAPTURE_INVALID": "La capture est invalide. Veuillez la refaire.",
+  "CAPTURE_TOO_LARGE": "La capture ne doit pas dépasser 2 Mo.",
+  "CAPTURE_DIMENSIONS_INVALID": "La capture ne doit pas dépasser 4 096 pixels par côté et 8 millions de pixels au total.",
+  "SCREENSHOT_NOT_FOUND": "Capture introuvable."
 }

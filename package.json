@@ -1,6 +1,6 @@
 {
   "name": "repere",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Open-source visual feedback for websites and PDFs.",
   "homepage": "https://repere.dev",
@@ -39,6 +39,7 @@
   "dependencies": {
     "dotenv": "17.4.2",
     "drizzle-orm": "0.45.2",
+    "html2canvas-pro": "2.4.3",
     "ipaddr.js": "2.5.0",
     "lucide-react": "1.46.0",
     "mysql2": "3.24.4",
@@ -49,6 +50,7 @@
     "pdfjs-dist": "6.3.289",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "sharp": "0.35.4",
     "zod": "4.6.5"
   },
   "devDependencies": {

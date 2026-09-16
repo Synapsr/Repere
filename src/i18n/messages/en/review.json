@@ -84,5 +84,11 @@
   "moveTitle": "Move to another workspace",
   "moveDescription": "The sharing link and all comments will stay the same.",
   "destinationWorkspace": "Destination workspace",
-  "moveProject": "Move project"
+  "moveProject": "Move project",
+  "captureTitle": "Point screenshot",
+  "captureView": "View screenshot",
+  "capturePending": "Capturing…",
+  "captureFailed": "The screenshot failed. You can publish this feedback without an image.",
+  "captureUnavailable": "This screenshot is unavailable.",
+  "publishWithoutCapture": "Publish without screenshot"
 }

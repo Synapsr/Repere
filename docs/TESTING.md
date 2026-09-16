@@ -95,3 +95,17 @@ CI runs lint, types, unit tests and migrations first, then API and browser integ
 The migration test also stops at the released 0.2.0 schema, adds a workspace member, and verifies that the invitation upgrade preserves all workspaces, memberships and existing records. It simulates interruption after the invitation table is created and confirms that rerunning the migration retains an existing invitation.
 
 `npm run test:invitations` creates another disposable MySQL container and stubs only email delivery. It verifies that a first send failure exposes no usable link, a resend failure preserves the old delivered link, cancellation during SMTP cannot be undone, and acceptance followed by removal prevents a pending resend from restoring access. It reads neither `.env` nor the configured application database and removes only its own container.
+
+## Comment screenshots
+
+Screenshot API tests validate real JPEG decoding, immutable stored pixels, private access,
+review-link rotation, archived guest access, rejected malformed/oversized images and
+unchanged comment counters after rejected uploads. They use synthetic local accounts.
+
+Chromium and Firefox tests place a point on a green element, change it to red before
+publishing, and inspect the stored JPEG pixels to prove the original state was retained.
+They check cancelled drafts, scrolling, navigation interactions, reload, marker placement
+and the expanded view. A two-page PDF with distinct page colors proves that the current
+rendered page is captured. Capture helper tests cover immediate cloning, timeouts and
+abandoned work. These fixtures do not establish pixel-perfect support for all external
+websites, cross-origin media or CSS effects.

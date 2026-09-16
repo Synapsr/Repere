@@ -48,6 +48,7 @@ Repère is an independent, open-source alternative for the visual feedback use c
 | **Workspaces**          | Create spaces, switch between them and move projects while keeping feedback and shared links.                       |
 | **Your team**           | Invite people by email, follow pending invitations and manage workspace members.                                    |
 | **Websites and PDFs**   | Add a URL or upload a private PDF up to 20 MiB. Search and filter your projects.                                    |
+| **Point screenshots**   | Capture the page when placing a point, keep it with the comment, and open it at full size.                          |
 | **One shared link**     | Invite reviewers who verify their email with a one-time code. No password to create.                                |
 | **Precise feedback**    | Attach a point to a website element and page, or to a position on a PDF page.                                       |
 | **Natural navigation**  | Browse, select text, follow links and use the site's controls. Switch to commenting when you want to place a point. |
@@ -161,7 +162,7 @@ A public deployment needs:
 - An HTTPS application domain.
 - A wildcard HTTPS domain for preview sessions, for example `*.repere.dev`, with the exact `app.repere.dev` application route taking priority. The apex `repere.dev` can serve a separate website.
 - An SMTP service for sign-in codes.
-- Backups of MySQL, PDF uploads and configuration.
+- Backups of MySQL, PDF uploads, comment screenshots and configuration.
 
 These deployment modes need one instance of the current preview service. Keep a single replica and stop the old instance before replacing a container that uses the integrated MySQL volume. Local tests do not validate your future DNS, certificates or SMTP provider.
 

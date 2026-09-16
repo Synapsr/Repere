@@ -56,5 +56,9 @@
   "INVITATION_UNAVAILABLE": "This invitation has expired, was canceled or is no longer available.",
   "INVITATION_EMAIL_MISMATCH": "Sign in with the email address that received this invitation.",
   "INVITATION_SEND_IN_PROGRESS": "An invitation is already being sent. Please wait a moment.",
-  "INVITATION_CHANGED": "This invitation changed while the email was being sent. Please try again."
+  "INVITATION_CHANGED": "This invitation changed while the email was being sent. Please try again.",
+  "CAPTURE_INVALID": "The screenshot is invalid. Please capture it again.",
+  "CAPTURE_TOO_LARGE": "The screenshot must be no larger than 2 MB.",
+  "CAPTURE_DIMENSIONS_INVALID": "The screenshot must fit within 4,096 pixels per side and 8 million pixels in total.",
+  "SCREENSHOT_NOT_FOUND": "Screenshot not found."
 }

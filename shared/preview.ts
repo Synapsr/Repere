@@ -1,5 +1,5 @@
 import type { Locale } from "./locale";
-import type { WebsiteAnchor } from "./types";
+import type { CaptureInput, WebsiteAnchor } from "./types";
 export type PreviewSession = {
   url: string;
   origin: string;
@@ -31,7 +31,8 @@ export type PreviewCommand = { source: "repere"; channel: string } & (
 );
 export type PreviewEvent = { source: "repere-preview"; channel: string } & (
   | { type: "ready" | "location"; url: string; title: string }
-  | { type: "anchor"; anchor: WebsiteAnchor }
+  | { type: "anchor"; anchor: WebsiteAnchor; captureId?: string }
+  | { type: "capture"; captureId: string; capture: CaptureInput | null }
   | { type: "select"; id: string }
   | { type: "error"; message: string }
 );

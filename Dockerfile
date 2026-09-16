@@ -25,7 +25,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.container/migrate.mjs ./migrate.mjs
 COPY --from=builder --chown=nextjs:nodejs /app/.container/runtime/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/.container/licenses/dotenv.LICENSE.txt /app/.container/licenses/drizzle-orm.LICENSE.txt ./licenses/
+COPY --from=builder --chown=nextjs:nodejs /app/.container/licenses/ ./licenses/
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 COPY --chown=nextjs:nodejs docker/app/start.mjs ./docker/app/start.mjs
 COPY --chown=nextjs:nodejs LICENSE THIRD_PARTY_NOTICES.md ./

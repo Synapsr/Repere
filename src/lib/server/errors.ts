@@ -43,7 +43,7 @@ export async function handle(
       const key = error.issues[0]?.message;
       // Schemas emit explicit message identifiers. Never expose Zod internals or user input.
       const code: ErrorCode = key && Object.hasOwn(en, key) ? (key as ErrorCode) : "INVALID_INPUT";
-      return errorResponse(code, 400, locale);
+      return errorResponse(code, code === "CAPTURE_TOO_LARGE" ? 413 : 400, locale);
     }
     // Do not log query parameters: they can contain OTP hashes, emails or comment content.
     console.error("API request failed", error instanceof Error ? error.name : "UnknownError");

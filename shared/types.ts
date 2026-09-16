@@ -31,6 +31,19 @@ export type WebsiteAnchor = {
 };
 export type PdfAnchor = { type: "pdf"; page: number; x: number; y: number };
 export type Anchor = WebsiteAnchor | PdfAnchor;
+export type CaptureInput = {
+  dataUrl: string;
+  capturedAt: string;
+  pointX: number;
+  pointY: number;
+};
+export type Screenshot = {
+  width: number;
+  height: number;
+  pointX: number;
+  pointY: number;
+  capturedAt: string;
+};
 export type Project = {
   id: string;
   name: string;
@@ -55,6 +68,7 @@ export type Feedback = {
   status: "open" | "resolved";
   kind: "text" | "audio" | "text-suggestion";
   anchor: Anchor;
+  screenshot?: Screenshot | null;
   author: User;
   replies: Reply[];
   createdAt: string;

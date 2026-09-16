@@ -1,14 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { database, type Transaction } from "@/db";
-import { comments, projects, replies, users } from "@/db/schema";
-import type { Anchor, Feedback, Project, Reply, User } from "../../../shared/types";
+import { commentScreenshots, comments, projects, replies, users } from "@/db/schema";
+import type { Anchor, CaptureInput, Feedback, Project, Reply, User } from "../../../shared/types";
 import { ApiError } from "./errors";
 import { appOrigin, ownerEmailAllowed, randomToken } from "./security";
 import { parsePdfUpload, removePdf, storePdf } from "./uploads";
 import { assertAnchorMatchesProject, websiteProjectSchema, readJson } from "./validation";
 import { rateLimit } from "./rate-limit";
 import { requireWorkspaceMembership, resolveWorkspace, workspaceMembership } from "./workspaces";
+import { prepareCapture, readCapture, removeCapture, storeCapture } from "./captures";
 
 type ProjectRow = typeof projects.$inferSelect;
 export function publicProject(row: ProjectRow): Project {
@@ -160,9 +161,20 @@ export async function updateProject(
 const authorFields = { id: users.id, email: users.email, name: users.name };
 export async function projectComments(projectId: string, commentId?: string): Promise<Feedback[]> {
   const rows = await database()
-    .select({ comment: comments, author: authorFields })
+    .select({
+      comment: comments,
+      author: authorFields,
+      screenshot: {
+        width: commentScreenshots.width,
+        height: commentScreenshots.height,
+        pointX: commentScreenshots.pointX,
+        pointY: commentScreenshots.pointY,
+        capturedAt: commentScreenshots.capturedAt,
+      },
+    })
     .from(comments)
     .innerJoin(users, eq(comments.authorId, users.id))
+    .leftJoin(commentScreenshots, eq(commentScreenshots.commentId, comments.id))
     .where(
       and(eq(comments.projectId, projectId), commentId ? eq(comments.id, commentId) : undefined),
     )
@@ -190,7 +202,7 @@ export async function projectComments(projectId: string, commentId?: string): Pr
     });
     grouped.set(reply.commentId, group);
   }
-  return rows.map(({ comment, author }) => ({
+  return rows.map(({ comment, author, screenshot }) => ({
     id: comment.id,
     number: comment.number,
     projectId: comment.projectId,
@@ -198,6 +210,9 @@ export async function projectComments(projectId: string, commentId?: string): Pr
     status: comment.status,
     kind: comment.kind,
     anchor: comment.anchor,
+    screenshot: screenshot
+      ? { ...screenshot, capturedAt: screenshot.capturedAt.toISOString() }
+      : null,
     author,
     replies: grouped.get(comment.id) ?? [],
     createdAt: comment.createdAt.toISOString(),
@@ -208,33 +223,72 @@ export async function projectComments(projectId: string, commentId?: string): Pr
 export async function createComment(
   token: string,
   user: User,
-  input: { body: string; anchor: Anchor },
+  input: { body: string; anchor: Anchor; capture?: CaptureInput },
 ) {
   await rateLimit("comment-create", user.id, 60, 60 * 1000);
   const id = randomUUID();
-  const projectId = await database().transaction(async (tx) => {
-    const project = await writableProject(tx, token);
-    assertAnchorMatchesProject(input.anchor, project);
-    await tx.insert(comments).values({
-      id,
-      projectId: project.id,
-      authorId: user.id,
-      number: project.nextCommentNumber,
-      body: input.body,
-      anchor: input.anchor,
-      kind: "text",
+  let storageKey: string | undefined;
+  let projectId: string;
+  try {
+    if (input.capture) {
+      // Refuse an invalid/revoked/read-only link before doing image work; release the lock
+      // before decoding so no project transaction waits on image processing or filesystem I/O.
+      await database().transaction(async (tx) =>
+        assertAnchorMatchesProject(input.anchor, await writableProject(tx, token)),
+      );
+    }
+    const capture = input.capture ? await prepareCapture(input.capture) : undefined;
+    if (capture) storageKey = await storeCapture(capture);
+    projectId = await database().transaction(async (tx) => {
+      const project = await writableProject(tx, token);
+      assertAnchorMatchesProject(input.anchor, project);
+      await tx.insert(comments).values({
+        id,
+        projectId: project.id,
+        authorId: user.id,
+        number: project.nextCommentNumber,
+        body: input.body,
+        anchor: input.anchor,
+        kind: "text",
+      });
+      if (capture && storageKey)
+        await tx.insert(commentScreenshots).values({
+          commentId: id,
+          storageKey,
+          byteSize: capture.bytes.length,
+          width: capture.width,
+          height: capture.height,
+          pointX: capture.pointX,
+          pointY: capture.pointY,
+          capturedAt: capture.capturedAt,
+        });
+      await tx
+        .update(projects)
+        .set({
+          nextCommentNumber: project.nextCommentNumber + 1,
+          commentCount: project.commentCount + 1,
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, project.id));
+      return project.id;
     });
-    await tx
-      .update(projects)
-      .set({
-        nextCommentNumber: project.nextCommentNumber + 1,
-        commentCount: project.commentCount + 1,
-        updatedAt: new Date(),
-      })
-      .where(eq(projects.id, project.id));
-    return project.id;
-  });
+  } catch (error) {
+    if (storageKey) await removeCapture(storageKey);
+    throw error;
+  }
   return (await projectComments(projectId, id))[0];
+}
+
+export async function getCommentScreenshot(token: string, commentId: string, user: User) {
+  const project = await projectByToken(token, user);
+  const [capture] = await database()
+    .select({ storageKey: commentScreenshots.storageKey })
+    .from(commentScreenshots)
+    .innerJoin(comments, eq(comments.id, commentScreenshots.commentId))
+    .where(and(eq(comments.id, commentId), eq(comments.projectId, project.id)))
+    .limit(1);
+  if (!capture) throw new ApiError(404, "SCREENSHOT_NOT_FOUND");
+  return readCapture(capture.storageKey);
 }
 
 export async function updateComment(

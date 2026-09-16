@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Anchor } from "../../../shared/types";
 import { anchorSchema, websiteUrlSchema } from "../../../shared/validation";
 import { ApiError } from "./errors";
+import { captureSchema } from "../../../shared/capture";
 
 export { anchorSchema, websiteUrlSchema } from "../../../shared/validation";
 
@@ -60,7 +61,10 @@ export const projectUpdateSchema = z
 export const replySchema = z
   .object({ body: z.string().trim().min(1, "COMMENT_REQUIRED").max(10000, "COMMENT_TOO_LONG") })
   .strict();
-export const commentSchema = replySchema.extend({ anchor: anchorSchema }).strict();
+export const MAX_COMMENT_BODY_BYTES = 3 * 1024 * 1024;
+export const commentSchema = replySchema
+  .extend({ anchor: anchorSchema, capture: captureSchema.optional() })
+  .strict();
 export const statusSchema = z.object({ status: z.enum(["open", "resolved"]) }).strict();
 
 export function assertAnchorMatchesProject(
@@ -106,11 +110,11 @@ export async function boundedBody(
   }
   return Buffer.concat(chunks, length);
 }
-export async function readJson(request: Request) {
+export async function readJson(request: Request, maxBytes = 64 * 1024) {
   if (request.headers.get("content-type")?.split(";")[0].trim() !== "application/json")
     throw new ApiError(415, "JSON_REQUIRED");
   try {
-    return JSON.parse((await boundedBody(request, 64 * 1024)).toString("utf8")) as unknown;
+    return JSON.parse((await boundedBody(request, maxBytes)).toString("utf8")) as unknown;
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw new ApiError(400, "JSON_INVALID");

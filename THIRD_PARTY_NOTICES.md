@@ -38,6 +38,18 @@ The preview service does not distribute the application fonts, PDF.js worker, or
 | `entities` (used by `parse5`) | BSD 2-Clause | `entities.LICENSE.txt`  |
 | `ipaddr.js`                   | MIT          | `ipaddr.js.LICENSE.txt` |
 
+The browser bridge additionally bundles `html2canvas-pro`, `css-line-break`,
+`text-segmentation`, `utrie` and `base64-arraybuffer` (all MIT). Their complete
+upstream licenses are preserved as `<package>.LICENSE.txt` in `/app/licenses/`
+in the preview and all-in-one images. Screenshots are rendered locally in the
+reviewer's browser; these packages do not operate a remote browser.
+
+The application uses `sharp` (Apache-2.0) to validate and re-encode uploaded
+screenshots. Native binaries remain in the standalone application's dependency tree.
+Sharp and its installed platform packages' license texts, README license inventories
+and version manifests are also copied into `/app/licenses/native/` in the app and
+all-in-one images, because Next.js output tracing can omit these notices.
+
 ## All-in-one image
 
 `Dockerfile.all-in-one` combines the application assets and native preview notices above with

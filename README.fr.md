@@ -48,6 +48,7 @@ Repère est une alternative open source indépendante pour le cas d'usage de ret
 | **Espaces de travail**        | Créer des espaces, passer de l’un à l’autre et déplacer des projets sans perdre leurs retours ni leurs liens.                             |
 | **Votre équipe**              | Inviter par email, suivre les invitations en attente et gérer les membres d’un espace.                                                    |
 | **Sites et PDF**              | Ajouter une URL ou importer un PDF privé jusqu'à 20 Mio. Rechercher et filtrer vos projets.                                               |
+| **Captures des points**       | Capturez la page au moment du clic, conservez-la avec le retour et ouvrez-la en grand.                                                    |
 | **Un lien partagé**           | Inviter des participants qui vérifient leur email avec un code à usage unique. Aucun mot de passe à créer.                                |
 | **Des retours précis**        | Attacher un point à un élément et une page du site, ou à une position sur une page PDF.                                                   |
 | **Une navigation naturelle**  | Parcourir le site, sélectionner du texte, suivre ses liens et utiliser ses contrôles. Passer en mode commentaire pour poser un point.     |
@@ -161,7 +162,7 @@ Un déploiement public demande :
 - Un domaine applicatif en HTTPS.
 - Un domaine HTTPS wildcard pour les aperçus, par exemple `*.repere.dev`, avec priorité à la route exacte `app.repere.dev` de l’application. Le domaine nu `repere.dev` peut accueillir un site distinct.
 - Un service SMTP pour les codes de connexion.
-- Des sauvegardes de MySQL, des PDF et de la configuration.
+- Des sauvegardes de MySQL, des PDF, des captures et de la configuration.
 
 Ces modes de déploiement utilisent une seule instance du service d'aperçu. Gardez une seule réplique et arrêtez l'ancien conteneur avant son remplacement lorsqu'il utilise le volume MySQL intégré. Les tests locaux ne valident pas vos futurs DNS, certificats ou fournisseur SMTP.
 

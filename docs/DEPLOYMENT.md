@@ -79,7 +79,7 @@ The complete example is [`.env.example`](../.env.example). Compose supplies inte
 | `DATABASE_URL`                          | Host-development database URL; Compose sets its own internal URL                  |
 | `PROXY_INTERNAL_URL`                    | Host-development preview address; Compose uses `http://preview:3001`              |
 | `SMTP_*`                                | Host, port, credentials, sender and TLS mode for email delivery                   |
-| `UPLOAD_DIR`                            | Private document directory; Compose sets `/app/uploads` and persists it           |
+| `UPLOAD_DIR`                            | Private PDF and screenshot directory; Compose sets `/app/uploads` and persists it           |
 | `ALLOWED_EMAIL_DOMAINS`                 | Optional exact domains allowed to create projects                                 |
 | `TRUST_PROXY`                           | Use the overwritten client-IP header only behind a trusted ingress                |
 | `PREVIEW_MAX_SESSIONS`                  | Concurrent in-memory preview capacity, default 100                                |
@@ -95,12 +95,12 @@ Leave `TRUST_PROXY=false` unless your ingress overwrites `X-Forwarded-For` and c
 Persist and back up these together:
 
 - **MySQL:** projects, identities, sessions, comments, replies and migration history.
-- **The uploads volume:** private PDF files referenced by the database.
+- **The uploads volume:** private PDF files and comment screenshots (`captures/`) referenced by the database.
 - **Configuration:** keep `.env` or equivalent secrets encrypted and access-controlled.
 
 Use a database-aware backup, coordinate it with uploaded files, and test a restore into an isolated installation. Do not treat a copy of a running MySQL data directory as a verified backup. A consistent maintenance window is the simplest way to capture database and file state together.
 
-Preview sessions are temporary in-memory state and are not backed up. Restarting the preview service closes those sessions; users reopen their review. Comments and PDF uploads remain persistent.
+Preview sessions are temporary in-memory state and are not backed up. Restarting the preview service closes those sessions; users reopen their review. Comments, screenshots and PDF uploads remain persistent.
 
 ## Updates and maintenance
 
