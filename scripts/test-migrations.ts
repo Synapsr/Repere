@@ -170,7 +170,16 @@ async function main() {
     assert.ok(interruptedAt > 0);
     for (const statement of workspaceSql.slice(0, interruptedAt + 1))
       await connection.query(statement);
-    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    // Stop at the released 0.2.0 schema before exercising the invitation upgrade.
+    await writeFile(
+      path.join(temporary, "meta/_journal.json"),
+      JSON.stringify({ ...journal, entries: journal.entries.slice(0, 2) }),
+    );
+    await writeFile(
+      path.join(temporary, `${journal.entries[1].tag}.sql`),
+      await readFile(`drizzle/${journal.entries[1].tag}.sql`),
+    );
+    await migrate(drizzle({ client: connection }), { migrationsFolder: temporary });
     for (const table of tables)
       assert.deepEqual(
         await rows(`SELECT * FROM ${table}`),
@@ -200,7 +209,7 @@ async function main() {
     const memberships = await rows("SELECT * FROM workspace_members ORDER BY workspaceId,userId");
     // Also cover a stop after the final DDL but before the migration journal write.
     for (const statement of workspaceSql) await connection.query(statement);
-    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    await migrate(drizzle({ client: connection }), { migrationsFolder: temporary });
     assert.deepEqual(
       await rows("SELECT * FROM workspaces ORDER BY id"),
       workspaces,
@@ -215,6 +224,41 @@ async function main() {
       "PASS: upgrade from 0.1.1 preserves projects, review links, PDFs, feedback and sessions; interrupted upgrade resumes and rerun is stable.",
     );
 
+    await connection.query(
+      "INSERT INTO workspace_members (workspaceId,userId,role) VALUES (?,?,'member')",
+      [owner, guest],
+    );
+    const existingTables = [...tables, "projects", "workspaces", "workspace_members"];
+    const beforeInvitations = new Map<string, RowDataPacket[]>();
+    for (const table of existingTables)
+      beforeInvitations.set(table, await rows(`SELECT * FROM ${table}`));
+    const invitationMigration = journal.entries[2];
+    assert.ok(invitationMigration, "Invitation migration must be registered");
+    const invitationSql = (await readFile(`drizzle/${invitationMigration.tag}.sql`, "utf8"))
+      .split("--> statement-breakpoint")
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+    // Resume after MySQL commits the invitation DDL but before Drizzle journals it.
+    for (const statement of invitationSql) await connection.query(statement);
+    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    for (const table of existingTables)
+      assert.deepEqual(
+        await rows(`SELECT * FROM ${table}`),
+        beforeInvitations.get(table),
+        `${table} must survive the 0.2.0 invitation upgrade unchanged`,
+      );
+    await connection.query(
+      "INSERT INTO workspace_invitations (id,workspaceId,email,inviterId,tokenHash,expiresAt) VALUES (?,?,?,?,?,DATE_ADD(NOW(), INTERVAL 7 DAY))",
+      [randomUUID(), owner, "invitee@example.test", owner, randomBytes(32).toString("hex")],
+    );
+    const invitations = await rows("SELECT * FROM workspace_invitations");
+    for (const statement of invitationSql) await connection.query(statement);
+    await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
+    assert.deepEqual(await rows("SELECT * FROM workspace_invitations"), invitations);
+    console.info(
+      "PASS: upgrade from 0.2.0 preserves workspaces, members and all existing data; interrupted invitation migration resumes without losing invitations.",
+    );
+
     await connection.query("CREATE DATABASE fresh_fixture");
     await connection.end();
     connection = await mysql.createConnection({
@@ -227,7 +271,13 @@ async function main() {
     });
     await migrate(drizzle({ client: connection }), { migrationsFolder: "./drizzle" });
     const tableNames = (await rows("SHOW TABLES")).map((row) => Object.values(row)[0]);
-    for (const table of ["workspaces", "workspace_members", "projects", ...tables])
+    for (const table of [
+      "workspaces",
+      "workspace_members",
+      "workspace_invitations",
+      "projects",
+      ...tables,
+    ])
       assert.ok(tableNames.includes(table), `Fresh installation must include ${table}`);
     const columns = await rows("SHOW COLUMNS FROM projects");
     assert.ok(columns.some((column) => column.Field === "workspaceId" && column.Null === "NO"));

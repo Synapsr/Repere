@@ -2,6 +2,15 @@
 
 This file records user-visible changes. Container version `0.2.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
+## 0.3.0 — 2026-09-16
+
+- Invite teammates by email from the workspace menu. Owners can see pending invitations, resend or cancel them, and remove members.
+- Recipients use the existing email-code login and explicitly accept before joining. Invitations expire after seven days and are bound to the invited email address.
+- English/French invitation emails and screens, keyboard support and a compact mobile members dialog.
+- Membership removal preserves projects and comments; old accepted invitations cannot restore access. Shared review links remain separate and can be rotated by workspace members.
+- Additive MySQL migration with existing spaces and data preserved; the current SMTP configuration is reused.
+- Separate CI integration databases keep invitation and OTP tests within the normal authentication quotas.
+
 ## 0.2.0 — 2026-09-16
 
 Published from [`7bf4877`](https://github.com/Synapsr/Repere/commit/7bf48770902cbb99e678e097105dc74413b7b32f). Tags `0.2.0`, `0.2` and `latest` identify this AMD64/ARM64 index:

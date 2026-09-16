@@ -14,6 +14,7 @@ import {
   Globe,
 } from "lucide-react";
 import { api } from "@/lib/client";
+import { loginDestination } from "@/lib/login-destination";
 import type { User } from "../../shared/types";
 import { Logo, Avatar, Spinner, ErrorBanner, OpenSourceFooter } from "./ui";
 
@@ -242,8 +243,7 @@ export function LoginPage() {
         </div>
         <AuthForm
           onSuccess={() => {
-            const next = searchParams.get("next");
-            router.replace(next && /^\/(?!\/)/.test(next) ? next : "/");
+            router.replace(loginDestination(searchParams.get("next"), window.location.origin));
           }}
         />
         <OpenSourceFooter />

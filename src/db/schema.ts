@@ -92,6 +92,33 @@ export const workspaceMembers = mysqlTable(
   ],
 );
 
+export const workspaceInvitations = mysqlTable(
+  "workspace_invitations",
+  {
+    id: id().primaryKey(),
+    workspaceId: id()
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    email: varchar({ length: 254 }).notNull(),
+    inviterId: id().references(() => users.id, { onDelete: "set null" }),
+    tokenHash: varchar({ length: 64 }),
+    // A resend cannot replace the working link until SMTP has accepted its replacement.
+    pendingTokenHash: varchar({ length: 64 }),
+    pendingStartedAt: timestamp({ mode: "date", fsp: 3 }),
+    expiresAt: timestamp({ mode: "date", fsp: 3 }).notNull(),
+    acceptedAt: timestamp({ mode: "date", fsp: 3 }),
+    revokedAt: timestamp({ mode: "date", fsp: 3 }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("workspace_invitations_workspace_email_unique").on(t.workspaceId, t.email),
+    uniqueIndex("workspace_invitations_token_unique").on(t.tokenHash),
+    uniqueIndex("workspace_invitations_pending_token_unique").on(t.pendingTokenHash),
+    index("workspace_invitations_expiry_idx").on(t.expiresAt),
+  ],
+);
+
 export const projects = mysqlTable(
   "projects",
   {

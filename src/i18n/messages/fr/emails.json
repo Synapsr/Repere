@@ -4,5 +4,12 @@
   "intro": "Utilisez ce code pour retrouver vos projets et partager vos retours.",
   "codeLabel": "Votre code",
   "expiry": "Ce code expire dans {minutes} minutes et ne peut être utilisé qu’une fois.",
-  "ignore": "Si vous n’avez pas demandé ce code, ignorez cet email."
+  "ignore": "Si vous n’avez pas demandé ce code, ignorez cet email.",
+  "invitationSubject": "Vous êtes invité à rejoindre {workspace} sur Repère",
+  "invitationHeading": "Rejoignez votre équipe sur Repère",
+  "invitationIntro": "{inviter} vous invite à rejoindre l’espace « {workspace} ».",
+  "invitationAction": "Rejoindre l’espace",
+  "invitationIdentity": "Connectez-vous avec l’adresse email qui a reçu cette invitation, puis acceptez-la pour accéder à l’espace.",
+  "invitationExpiry": "Cette invitation expire dans 7 jours.",
+  "invitationIgnore": "Si vous n’attendiez pas cette invitation, ignorez cet email."
 }

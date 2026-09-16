@@ -47,5 +47,14 @@
   "COMMENT_REQUIRED": "Écrivez votre commentaire.",
   "COMMENT_TOO_LONG": "Votre commentaire ne doit pas dépasser 10 000 caractères.",
   "INVALID_WEBSITE_URL": "Indiquez une URL HTTP ou HTTPS sans identifiants.",
-  "INVALID_LOCALE": "Choisissez l’anglais ou le français."
+  "INVALID_LOCALE": "Choisissez l’anglais ou le français.",
+  "WORKSPACE_OWNER_REQUIRED": "Seuls les propriétaires de l’espace peuvent gérer les membres et les invitations.",
+  "WORKSPACE_MEMBER_PROTECTED": "Les propriétaires de l’espace ne peuvent pas être retirés.",
+  "WORKSPACE_MEMBER_NOT_FOUND": "Membre de l’espace introuvable.",
+  "WORKSPACE_ALREADY_MEMBER": "Cette personne est déjà membre de l’espace.",
+  "INVITATION_NOT_FOUND": "Invitation introuvable.",
+  "INVITATION_UNAVAILABLE": "Cette invitation a expiré, a été annulée ou n’est plus disponible.",
+  "INVITATION_EMAIL_MISMATCH": "Connectez-vous avec l’adresse email qui a reçu cette invitation.",
+  "INVITATION_SEND_IN_PROGRESS": "Une invitation est déjà en cours d’envoi. Veuillez patienter un instant.",
+  "INVITATION_CHANGED": "Cette invitation a changé pendant l’envoi de l’email. Veuillez réessayer."
 }

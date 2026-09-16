@@ -30,7 +30,19 @@ Every project belongs to a workspace. `workspace_members` joins users to spaces 
 
 The dashboard lists only the selected workspace’s projects. Its URL carries `?workspace=<id>`; the browser remembers the last space separately for each signed-in user. Every API request checks membership again. Moving a project requires membership in both source and destination; its ID, sharing token, comments and PDF storage stay intact.
 
-`GET /api/workspaces` creates a first space for an account with no memberships, serializing on its user row to avoid duplicates. Explicit workspace and project creation respect `ALLOWED_EMAIL_DOMAINS=agency.example,example.com`. Reviewers can still verify their email and participate through shared links. Team invitations and member administration are not exposed yet.
+`GET /api/workspaces` creates a first space for an account with no memberships, serializing on its user row to avoid duplicates. Explicit workspace and project creation respect `ALLOWED_EMAIL_DOMAINS=agency.example,example.com`. Reviewers can still verify their email and participate through shared links. Workspace invitations do not grant workspace-creation privileges or bypass this domain restriction.
+
+### Inviting a team
+
+The workspace menu opens **Members**. Owners can invite an email address, resend or cancel a pending invitation, and remove a member. All members can read the roster and manage workspace projects. Only owners can administer membership; the API does not accept a role supplied by a client. Owners cannot remove themselves or another owner.
+
+An invitation lasts seven days and requires explicit acceptance by a signed-in account with the exact invited, normalized email address. The existing email-code login verifies that identity. Opening a link alone never grants access. The public invitation page shows a masked address; the API never returns the secret token. The database stores only SHA-256 hashes of random 256-bit tokens.
+
+Successful resend replaces the previous invitation link. SMTP failures preserve an existing working link, and cancellation prevents an in-flight delivery from reactivating it. Invitation writes and membership changes use transactions and row locks. Project writes recheck membership inside their transaction, including after a PDF upload. Removing a member preserves their projects and comments; an already accepted invitation cannot re-add them. A new invitation and acceptance are required.
+
+**Shared review links remain usable after removal.** Workspace membership controls project administration, while a valid review link separately permits guest participation. Rotate a project's shared link if it must no longer be used by its previous recipients.
+
+### Upgrades and shared reviews
 
 The workspace migration creates one space per existing project owner, copies their membership, and assigns all their projects before enforcing the new foreign key. Existing project and comment IDs, share tokens, files and sessions are unchanged. The original project owner becomes `createdBy`. Back up MySQL and uploads before upgrading; stop the previous app while changing the schema. Reverting application code alone does not revert the migration.
 
@@ -46,16 +58,18 @@ Every mutation, including OTP and locale changes, requires `Origin` to exactly m
 
 Rate limits live in MySQL, are consumed under locks and survive application restarts. HMAC keys avoid adding plaintext email/IP values to the limit table.
 
-| Action                                | Limit                                      |
-| ------------------------------------- | ------------------------------------------ |
-| OTP send per email                    | 3 / 10 minutes                             |
-| OTP send per network / whole instance | 30 / 10 minutes; 200 / 10 minutes globally |
-| OTP verification per email / network  | 20 / 10 minutes; 100 / 10 minutes          |
-| Workspace creation per user           | 20 / hour                                  |
-| Project creation per user             | 30 / hour                                  |
-| Comment or reply per user             | 60 / minute per action                     |
-| Status changes per user               | 120 / minute                               |
-| Preview creation per user             | 20 / minute                                |
+| Action                                                          | Limit                                      |
+| --------------------------------------------------------------- | ------------------------------------------ |
+| OTP send per email                                              | 3 / 10 minutes                             |
+| OTP send per network / whole instance                           | 30 / 10 minutes; 200 / 10 minutes globally |
+| OTP verification per email / network                            | 20 / 10 minutes; 100 / 10 minutes          |
+| Workspace creation per user                                     | 20 / hour                                  |
+| Invitation send per user / workspace / recipient in a workspace | 30 / hour; 50 / hour; 5 / hour             |
+| Invitation accept, cancel or member removal per user            | 60 / hour per action                       |
+| Project creation per user                                       | 30 / hour                                  |
+| Comment or reply per user                                       | 60 / minute per action                     |
+| Status changes per user                                         | 120 / minute                               |
+| Preview creation per user                                       | 20 / minute                                |
 
 By default, clients share the network limit rather than being allowed to bypass it with forged `X-Forwarded-For`. Enable `TRUST_PROXY=true` only behind a trusted ingress that overwrites this header and prevents direct app access; its first address is then used. Review `rate-limit.ts` and service quotas for your expected load.
 

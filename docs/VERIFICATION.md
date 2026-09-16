@@ -2,6 +2,21 @@
 
 This page records observed checks, not compatibility promises. Test instructions are in [TESTING.md](TESTING.md).
 
+## Workspace invitations 0.3.0 — 16 September 2026
+
+Local verification before publication:
+
+- **148 unit and HTTP tests** pass; ESLint, TypeScript, formatting and dependency audit pass (zero reported vulnerabilities).
+- **38 complete integration scenarios** pass on their first attempt: 10 API, 14 Chromium and 14 Firefox. The two optional HTTPS checks are skipped in this local run.
+- **Four additional browser scenarios** pass for automatic member-list refresh and stale-response handling, with controlled responses and no OTP requests.
+- Real invitation email delivery through local Mailpit, email-code login, explicit acceptance, workspace project access, removal, and rejection of a previously accepted link pass in both browsers. All recipients are synthetic test identities.
+- API checks cover matching-email enforcement, token hashing, owner permissions, resend, cancellation, expiry, idempotency and continued guest participation through existing shared review links.
+- **Four MySQL concurrency scenarios** pass on a separate disposable database: first delivery failure, resend failure preserving the previous token, cancellation during email delivery, and acceptance/removal while a resend is pending. SMTP alone is controlled in these tests; database transactions are real.
+- Fresh installation, interrupted migration and upgrades from the 0.1.1 and 0.2.0 schemas pass without losing existing projects, memberships, feedback, sharing links or sessions.
+- Visual checks at 320, 390 and 1440 pixels cover owner/member views, invitation acceptance, wrong-account and unavailable/error states in Chromium and Firefox.
+
+API and browser integration run against independent local MySQL/Mailpit stacks, using 17 and 18 OTP sends respectively. Authentication quotas remain unchanged. Hosted CI and publication results are recorded after completion.
+
 ## Workspaces 0.2.0 — 16 September 2026
 
 Source revision [`7bf4877`](https://github.com/Synapsr/Repere/commit/7bf48770902cbb99e678e097105dc74413b7b32f) passed [CI run 35073047727](https://github.com/Synapsr/Repere/actions/runs/35073047727):

@@ -133,3 +133,7 @@ The current preview service runs as one instance with in-memory sessions. Local 
 `GET /api/health` checks database access. The preview service has its own `/health` endpoint on the base/internal host. Neither proves email delivery or compatibility with a particular website. Monitor SMTP failures, storage usage, database health and proxy traffic for your environment.
 
 Review [SECURITY.md](../SECURITY.md) and the [compatibility boundaries](PREVIEW.md#compatibility) before opening an instance to clients.
+
+### Workspace invitation upgrade (0.3.0)
+
+The invitation release adds one MySQL table and uses the existing SMTP configuration. No new environment variables or preview-service changes are required. Back up the database before upgrading and let the standard startup migrator finish. Existing spaces, members, projects and sharing links are preserved. Invitations sent by the app require the recipient to sign in with the invited email and accept before joining.

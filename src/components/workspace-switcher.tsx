@@ -1,22 +1,25 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { Workspace } from "../../shared/types";
 import { api } from "@/lib/client";
 import { ErrorBanner, Modal, Spinner } from "./ui";
+import { WorkspaceMembers } from "./workspace-members";
 import "./workspace-switcher.css";
 
 export function WorkspaceSwitcher({
   workspace,
   workspaces,
+  currentUserId,
   onSelect,
   onCreated,
   autoFocus = false,
 }: {
   workspace: Workspace;
   workspaces: Workspace[];
+  currentUserId: string;
   onSelect: (workspace: Workspace) => void;
   onCreated: (workspace: Workspace) => void;
   autoFocus?: boolean;
@@ -29,6 +32,7 @@ export function WorkspaceSwitcher({
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -57,7 +61,7 @@ export function WorkspaceSwitcher({
     trigger.current?.focus();
   }
   function keyboard(event: KeyboardEvent) {
-    const count = workspaces.length + 1;
+    const count = workspaces.length + 2;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       setFocused((index) => (index + (event.key === "ArrowDown" ? 1 : -1) + count) % count);
@@ -71,6 +75,10 @@ export function WorkspaceSwitcher({
   }
   function closeCreation() {
     setCreating(false);
+    requestAnimationFrame(() => trigger.current?.focus());
+  }
+  function closeMembers() {
+    setMembersOpen(false);
     requestAnimationFrame(() => trigger.current?.focus());
   }
 
@@ -138,10 +146,23 @@ export function WorkspaceSwitcher({
             ))}
           </div>
           <button
-            className="workspace-create"
+            className="workspace-menu-action"
             role="menuitem"
             tabIndex={focused === workspaces.length ? 0 : -1}
             onFocus={() => setFocused(workspaces.length)}
+            onClick={() => {
+              setOpen(false);
+              setMembersOpen(true);
+            }}
+          >
+            <Users size={16} />
+            {t("members")}
+          </button>
+          <button
+            className="workspace-create"
+            role="menuitem"
+            tabIndex={focused === workspaces.length + 1 ? 0 : -1}
+            onFocus={() => setFocused(workspaces.length + 1)}
             onClick={() => {
               setOpen(false);
               setCreating(true);
@@ -153,6 +174,13 @@ export function WorkspaceSwitcher({
         </div>
       )}
       {creating && <CreateWorkspace onClose={closeCreation} onCreated={onCreated} />}
+      {membersOpen && (
+        <WorkspaceMembers
+          workspace={workspace}
+          currentUserId={currentUserId}
+          onClose={closeMembers}
+        />
+      )}
     </div>
   );
 }

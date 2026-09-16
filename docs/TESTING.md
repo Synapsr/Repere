@@ -14,7 +14,10 @@ npm run lint
 npm run typecheck
 npm test
 npm run test:migrations
-npm run test:e2e
+npm run test:invitations
+npm run test:integration
+# Run the browser suite on a separate disposable stack, or after the OTP window expires.
+npm run test:ui
 ```
 
 `setup` creates `.env` with independent cryptographic secrets and available local ports. It preserves existing values and adds missing native preview configuration when upgrading. MySQL data, PDF uploads and the local mailbox persist in named Docker volumes. Database migrations must complete before the app starts.
@@ -81,4 +84,14 @@ Remove volumes only when deliberately resetting a disposable test installation. 
 
 `npm run test:migrations` starts its own MySQL 8.4 container with a random password and loopback-only port. It does not read `.env` or `DATABASE_URL`. It seeds the 0.1.1 schema with two project owners, an invited reviewer, website feedback, replies, attachment metadata, an archived PDF and a session, then applies the current Drizzle migrations. Assertions compare retained records and links, check workspace membership, resume an interrupted backfill, repeat migrations, and verify a fresh installation. The command removes only its own disposable container and volumes when finished.
 
-Workspace API tests verify membership-based management, project isolation, transfers and guest sharing. Their member fixture connects only to the development MySQL database; no membership mutation endpoint is exposed to clients. Browser tests cover creation, switching, navigation history, remembered selection, keyboard and narrow-screen use.
+Workspace API tests verify membership-based management, project isolation, transfers and guest sharing. Their member fixture connects only to the development MySQL database; this fixture does not bypass the separate invitation scenarios, which use the public API and real emails. Browser tests cover creation, switching, navigation history, remembered selection, keyboard and narrow-screen use.
+
+## Workspace invitation checks
+
+Invitation integration tests send only to synthetic `example.test` addresses captured by local Mailpit. They exercise email delivery, the existing OTP sign-in, explicit acceptance, matching-email enforcement, resend/cancel/expiry, owner-only administration, and removal without restoring access through an old accepted link. Browser checks cover the members dialog and invitation journey in Chromium and Firefox, including narrow-screen and keyboard use.
+
+CI runs lint, types, unit tests and migrations first, then API and browser integration jobs on **independent MySQL and Mailpit installations**. Each job stays within the normal OTP network quota. To run both groups locally against one installation, allow the ten-minute OTP window to expire between them; alternatively use separate Compose project names, ports and volumes. `npm run test:e2e` still selects every project and may exceed the network quota on a single installation. Keep the production limits enabled.
+
+The migration test also stops at the released 0.2.0 schema, adds a workspace member, and verifies that the invitation upgrade preserves all workspaces, memberships and existing records. It simulates interruption after the invitation table is created and confirms that rerunning the migration retains an existing invitation.
+
+`npm run test:invitations` creates another disposable MySQL container and stubs only email delivery. It verifies that a first send failure exposes no usable link, a resend failure preserves the old delivered link, cancellation during SMTP cannot be undone, and acceptance followed by removal prevents a pending resend from restoring access. It reads neither `.env` nor the configured application database and removes only its own container.

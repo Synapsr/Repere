@@ -47,5 +47,14 @@
   "COMMENT_REQUIRED": "Write your comment.",
   "COMMENT_TOO_LONG": "Your comment must not exceed 10,000 characters.",
   "INVALID_WEBSITE_URL": "Enter an HTTP or HTTPS URL without credentials.",
-  "INVALID_LOCALE": "Choose English or French."
+  "INVALID_LOCALE": "Choose English or French.",
+  "WORKSPACE_OWNER_REQUIRED": "Only workspace owners can manage members and invitations.",
+  "WORKSPACE_MEMBER_PROTECTED": "Workspace owners cannot be removed.",
+  "WORKSPACE_MEMBER_NOT_FOUND": "Workspace member not found.",
+  "WORKSPACE_ALREADY_MEMBER": "This person is already a workspace member.",
+  "INVITATION_NOT_FOUND": "Invitation not found.",
+  "INVITATION_UNAVAILABLE": "This invitation has expired, was canceled or is no longer available.",
+  "INVITATION_EMAIL_MISMATCH": "Sign in with the email address that received this invitation.",
+  "INVITATION_SEND_IN_PROGRESS": "An invitation is already being sent. Please wait a moment.",
+  "INVITATION_CHANGED": "This invitation changed while the email was being sent. Please try again."
 }

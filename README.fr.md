@@ -46,6 +46,7 @@ Repère est une alternative open source indépendante pour le cas d'usage de ret
 |                               | Ce que vous pouvez faire                                                                                                                  |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | **Espaces de travail**        | Créer des espaces, passer de l’un à l’autre et déplacer des projets sans perdre leurs retours ni leurs liens.                             |
+| **Votre équipe**              | Inviter par email, suivre les invitations en attente et gérer les membres d’un espace.                                                    |
 | **Sites et PDF**              | Ajouter une URL ou importer un PDF privé jusqu'à 20 Mio. Rechercher et filtrer vos projets.                                               |
 | **Un lien partagé**           | Inviter des participants qui vérifient leur email avec un code à usage unique. Aucun mot de passe à créer.                                |
 | **Des retours précis**        | Attacher un point à un élément et une page du site, ou à une position sur une page PDF.                                                   |
@@ -204,7 +205,7 @@ La priorité actuelle est un parcours complet et compréhensible de points et co
 - **Retours audio :** enregistrement, lecture et transcription Whisper optionnelle. Le schéma réserve les métadonnées, la durée, l'état de transcription et le fournisseur.
 - **Suggestions de texte :** sélectionner un passage, proposer un remplacement et prévisualiser la modification dans la page. Les textes original et proposé disposent de champs réservés.
 - Notifications de commentaires, exports, suppression des comptes et règles de conservation.
-- Invitations dans les espaces, gestion des membres et rôles d’équipe détaillés.
+- Rôles et permissions d’équipe plus détaillés.
 - Sélection textuelle dans les PDF, versions de documents et pièces jointes supplémentaires.
 - Nouveaux cas de compatibilité, stockage S3 et sessions d'aperçu distribuées.
 

@@ -80,22 +80,27 @@ export async function createProject(request: Request, user: User, requestedWorks
   await rateLimit("project-create", user.id, 30, 60 * 60 * 1000);
   const workspaceId = await resolveWorkspace(user, requestedWorkspaceId);
   const common = { id: randomUUID(), workspaceId, createdBy: user.id, shareToken: randomToken() };
+  const insert = (values: typeof projects.$inferInsert) =>
+    database().transaction(async (tx) => {
+      // Upload parsing/storage happens first. A member removed meanwhile cannot create a project.
+      // The shared lock also serializes commit with member removal's exclusive lock.
+      await requireWorkspaceMembership(workspaceId, user.id, tx, "share");
+      await tx.insert(projects).values(values);
+    });
   let storageKey: string | undefined;
   try {
     if (request.headers.get("content-type")?.startsWith("multipart/form-data")) {
       const input = await parsePdfUpload(request);
       storageKey = await storePdf(input.bytes);
-      await database()
-        .insert(projects)
-        .values({
-          ...common,
-          type: "pdf",
-          name: input.name,
-          description: input.description || null,
-          storageKey,
-          fileName: input.fileName,
-          fileSize: input.fileSize,
-        });
+      await insert({
+        ...common,
+        type: "pdf",
+        name: input.name,
+        description: input.description || null,
+        storageKey,
+        fileName: input.fileName,
+        fileSize: input.fileSize,
+      });
     } else {
       const input = websiteProjectSchema.parse(await readJson(request));
       // Local Docker demo URLs must resolve from the isolated preview service container.
@@ -112,9 +117,7 @@ export async function createProject(request: Request, user: User, requestedWorks
         destination.hash = source.hash;
         input.url = websiteProjectSchema.shape.url.parse(destination.toString());
       }
-      await database()
-        .insert(projects)
-        .values({ ...common, ...input, description: input.description || null });
+      await insert({ ...common, ...input, description: input.description || null });
     }
   } catch (error) {
     if (storageKey) await removePdf(storageKey);
@@ -138,10 +141,10 @@ export async function updateProject(
   const project = await database().transaction(async (tx) => {
     const [row] = await tx.select().from(projects).where(eq(projects.id, id)).for("update");
     if (!row) throw new ApiError(404, "PROJECT_NOT_FOUND");
-    if (!(await workspaceMembership(row.workspaceId, user.id, tx)))
+    if (!(await workspaceMembership(row.workspaceId, user.id, tx, "share")))
       throw new ApiError(404, "PROJECT_NOT_FOUND");
     if (input.workspaceId !== undefined)
-      await requireWorkspaceMembership(input.workspaceId, user.id, tx);
+      await requireWorkspaceMembership(input.workspaceId, user.id, tx, "share");
     const { rotateShareToken, ...changes } = input;
     const patch = {
       ...changes,
@@ -251,7 +254,7 @@ export async function updateComment(
     if (!comment) throw new ApiError(404, "COMMENT_NOT_FOUND");
     if (
       comment.authorId !== user.id &&
-      !(await workspaceMembership(project.workspaceId, user.id, tx))
+      !(await workspaceMembership(project.workspaceId, user.id, tx, "share"))
     )
       throw new ApiError(403, "COMMENT_STATUS_FORBIDDEN");
     if (comment.status !== status) {

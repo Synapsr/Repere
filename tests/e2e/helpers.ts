@@ -103,7 +103,7 @@ export function assertLocalWorkspaceEnvironment() {
   }
 }
 
-/** Membership has no public invitation API yet; create only this test user's member row. */
+/** Isolated permission fixture; invitation flows use the real email/acceptance API separately. */
 export async function grantWorkspaceMember(workspaceId: string, userId: string) {
   assertLocalWorkspaceEnvironment();
   const databaseUrl = process.env.DATABASE_URL;

@@ -1,5 +1,22 @@
 export type User = { id: string; email: string; name: string };
 export type Workspace = { id: string; name: string; role: "owner" | "member" };
+export type WorkspaceMember = { user: User; role: "owner" | "member" };
+export type WorkspaceInvitation = {
+  id: string;
+  email: string;
+  expiresAt: string;
+  createdAt: string;
+};
+export type InvitationData = {
+  invitation: {
+    workspaceName: string;
+    inviterName: string | null;
+    emailHint: string;
+    expiresAt: string;
+  };
+  user: User | null;
+  canAccept: boolean;
+};
 export type WebsiteAnchor = {
   type: "website";
   url: string;

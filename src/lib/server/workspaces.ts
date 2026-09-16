@@ -13,12 +13,14 @@ export async function workspaceMembership(
   workspaceId: string,
   userId: string,
   db: Reader = database(),
+  lock?: "share" | "update",
 ) {
-  const [member] = await db
+  const query = db
     .select({ role: workspaceMembers.role })
     .from(workspaceMembers)
     .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, userId)))
     .limit(1);
+  const [member] = await (lock ? query.for(lock) : query);
   return member ?? null;
 }
 
@@ -26,9 +28,21 @@ export async function requireWorkspaceMembership(
   workspaceId: string,
   userId: string,
   db: Reader = database(),
+  lock?: "share" | "update",
 ) {
-  const membership = await workspaceMembership(workspaceId, userId, db);
+  const membership = await workspaceMembership(workspaceId, userId, db, lock);
   if (!membership) throw new ApiError(404, "WORKSPACE_NOT_FOUND");
+  return membership;
+}
+
+export async function requireWorkspaceOwner(
+  workspaceId: string,
+  userId: string,
+  db: Reader = database(),
+  lock?: "share" | "update",
+) {
+  const membership = await requireWorkspaceMembership(workspaceId, userId, db, lock);
+  if (membership.role !== "owner") throw new ApiError(403, "WORKSPACE_OWNER_REQUIRED");
   return membership;
 }
 
@@ -36,7 +50,7 @@ export function defaultWorkspaceName(user: Pick<User, "name" | "email">) {
   return (user.name.trim() || user.email.split("@")[0].trim() || "Workspace").slice(0, 80);
 }
 
-async function lockUser(tx: Transaction, userId: string) {
+export async function lockWorkspaceUser(tx: Transaction, userId: string) {
   const [user] = await tx
     .select({ id: users.id })
     .from(users)
@@ -65,7 +79,7 @@ async function insertWorkspace(tx: Transaction, userId: string, name: string): P
 /** The user's row serializes first-space bootstrap and explicit creation across app instances. */
 export async function listWorkspaces(user: User): Promise<Workspace[]> {
   return database().transaction(async (tx) => {
-    await lockUser(tx, user.id);
+    await lockWorkspaceUser(tx, user.id);
     const rows = await tx
       .select({ id: workspaces.id, name: workspaces.name, role: workspaceMembers.role })
       .from(workspaceMembers)
@@ -88,7 +102,7 @@ export async function createWorkspace(user: User, name: string): Promise<Workspa
   if (!ownerEmailAllowed(user.email)) throw new ApiError(403, "WORKSPACE_CREATE_FORBIDDEN");
   await rateLimit("workspace-create", user.id, 20, 60 * 60 * 1000);
   return database().transaction(async (tx) => {
-    await lockUser(tx, user.id);
+    await lockWorkspaceUser(tx, user.id);
     return insertWorkspace(tx, user.id, name);
   });
 }

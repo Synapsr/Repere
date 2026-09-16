@@ -392,6 +392,7 @@ function WorkspaceDashboard({
         <WorkspaceSwitcher
           workspace={workspace}
           workspaces={workspaces}
+          currentUserId={user.id}
           onSelect={onSelectWorkspace}
           onCreated={onCreatedWorkspace}
           autoFocus={focusSwitcher}

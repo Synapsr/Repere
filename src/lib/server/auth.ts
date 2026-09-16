@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, gt, lt } from "drizzle-orm";
 import { cookies } from "next/headers";
-import nodemailer from "nodemailer";
 import { database } from "@/db";
 import { otpChallenges, sessions, users } from "@/db/schema";
 import type { User } from "../../../shared/types";
 import { resolveLocale } from "../../../shared/locale";
 import { ApiError } from "./errors";
 import { renderOtpEmail } from "./emails";
+import { sendEmail } from "./mail";
 import { rateLimit } from "./rate-limit";
 import {
   appOrigin,
@@ -70,24 +70,10 @@ export async function requestOtp(request: Request, input: { email: string; name?
       },
     });
   try {
-    const host = process.env.SMTP_HOST;
-    if (!host) throw new Error("SMTP_HOST is required.");
-    const transporter = nodemailer.createTransport({
-      host,
-      port: Number(process.env.SMTP_PORT || 1025),
-      secure: process.env.SMTP_SECURE === "true",
-      ...(process.env.SMTP_USER
-        ? { auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD } }
-        : {}),
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-    });
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || "Repère <hello@repere.local>",
-      to: input.email,
-      ...renderOtpEmail(resolveLocale(request.headers), code, OTP_TTL_MS / 60000),
-    });
+    await sendEmail(
+      input.email,
+      renderOtpEmail(resolveLocale(request.headers), code, OTP_TTL_MS / 60000),
+    );
   } catch {
     await database()
       .update(otpChallenges)

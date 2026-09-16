@@ -1,0 +1,289 @@
+.workspace-members-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.workspace-members-intro strong {
+  color: var(--ink);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.workspace-members-loading {
+  padding: 28px 0;
+  text-align: center;
+  color: var(--muted);
+}
+.workspace-invite-form {
+  margin-bottom: 24px;
+}
+.workspace-invite-form > div {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.workspace-invite-form input {
+  min-width: 0;
+  flex: 1;
+  margin-bottom: 0;
+}
+.workspace-invite-form .button {
+  flex-shrink: 0;
+}
+.workspace-member-list,
+.workspace-pending-invitations ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.workspace-member-list > li + li {
+  border-top: 1px solid var(--line);
+}
+.workspace-member-row,
+.workspace-pending-invitations li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 0;
+}
+.workspace-member-row > .avatar {
+  flex-shrink: 0;
+}
+.workspace-member-identity {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.workspace-member-identity strong {
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.workspace-member-identity > span {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.workspace-member-role {
+  padding: 4px 6px;
+  border-radius: 5px;
+  background: #f6f7fb;
+  font-size: 11px;
+  color: var(--muted);
+}
+.workspace-member-row > .icon-button {
+  flex-shrink: 0;
+  width: 30px;
+  height: 32px;
+}
+.workspace-member-confirm {
+  margin: 0 0 14px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f6f7fb;
+}
+.workspace-member-confirm p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.workspace-member-confirm p:first-child {
+  color: var(--ink);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.workspace-member-confirm > div {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.workspace-member-confirm .button {
+  min-height: 34px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+.workspace-member-confirm .workspace-remove-confirm {
+  color: #a53345;
+  background: #fff;
+  border-color: #ecd9dd;
+}
+.workspace-pending-invitations {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.workspace-pending-invitations h3 {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.workspace-invitation-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  color: var(--muted);
+  border-radius: 8px;
+  background: #f6f7fb;
+}
+.workspace-invitation-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 3px;
+  align-items: center;
+}
+.workspace-invitation-actions .text-button {
+  font-size: 11px;
+  padding: 6px;
+}
+.workspace-invitation-actions .icon-button {
+  width: 28px;
+  height: 32px;
+}
+.workspace-members-notice {
+  margin-top: 16px;
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  background: var(--accent-soft);
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+.workspace-invitation-page {
+  min-height: 100dvh;
+  padding: 32px;
+  background: #f6f7fb;
+}
+.workspace-invitation-page > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1060px;
+  margin: 0 auto;
+}
+.workspace-invitation-card {
+  max-width: 450px;
+  margin: clamp(40px, 10vh, 120px) auto;
+  padding: 38px;
+  border: 1px solid #e8eaf1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 40px #20233105;
+  text-align: center;
+}
+.workspace-invitation-symbol {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 24px;
+  border-radius: 15px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.workspace-invitation-card h1 {
+  margin: 8px 0 12px;
+  font-size: 27px;
+  line-height: 1.2;
+  letter-spacing: -1px;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.workspace-invitation-card p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.workspace-invitation-card .workspace-invitation-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.workspace-invitation-card .workspace-invitation-access {
+  margin: 16px 0 24px;
+}
+.workspace-invitation-card .workspace-invitation-account {
+  margin: 0 0 14px;
+  font-size: 12px;
+}
+.workspace-invitation-card .workspace-invitation-expiry {
+  margin-top: 20px;
+  font-size: 11px;
+}
+.workspace-invitation-card .error-banner {
+  text-align: left;
+}
+.workspace-invitation-card .error-banner + p {
+  margin: 16px 0;
+}
+.workspace-invitation-wrong-account {
+  padding: 14px;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafbfe;
+}
+.workspace-invitation-wrong-account p + p {
+  margin-top: 8px;
+}
+@media (max-width: 600px) {
+  .workspace-members-intro {
+    margin-bottom: 20px;
+  }
+  .workspace-member-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .workspace-member-row .workspace-member-identity {
+    flex-basis: calc(100% - 44px);
+  }
+  .workspace-member-role {
+    margin-left: 40px;
+    font-size: 11px;
+  }
+  .workspace-member-row > .icon-button {
+    margin-left: auto;
+  }
+  .workspace-pending-invitations li {
+    flex-wrap: wrap;
+  }
+  .workspace-pending-invitations .workspace-member-identity {
+    flex-basis: calc(100% - 44px);
+  }
+  .workspace-invitation-actions {
+    margin-left: 42px;
+  }
+  .workspace-invite-form > div {
+    flex-wrap: wrap;
+  }
+  .workspace-invite-form input {
+    flex-basis: 100%;
+  }
+  .workspace-invite-form .button {
+    margin-left: auto;
+  }
+  .workspace-invitation-page {
+    padding: 22px 16px;
+  }
+  .workspace-invitation-card {
+    padding: 28px 22px;
+    margin-top: 48px;
+  }
+  .workspace-invitation-card h1 {
+    font-size: 25px;
+  }
+}

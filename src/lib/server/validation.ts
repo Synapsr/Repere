@@ -24,6 +24,7 @@ export const authVerifySchema = z
   })
   .strict();
 export const workspaceIdSchema = z.uuid("WORKSPACE_ID_INVALID");
+export const workspaceInvitationSchema = z.object({ email: emailSchema }).strict();
 export const workspaceCreateSchema = z
   .object({
     name: z.string().trim().min(1, "WORKSPACE_NAME_REQUIRED").max(80, "WORKSPACE_NAME_TOO_LONG"),
