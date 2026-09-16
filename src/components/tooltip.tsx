@@ -50,6 +50,7 @@ export function Tooltip({ content, side = "top", asChild = false, children }: To
   const keyboardFocus = useRef(false);
   const [present, setPresent] = useState(false);
   const [open, setOpen] = useState(false);
+  const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   const child = children as ReactElement<TriggerProps>;
   const childRef = child.props.ref;
   const composedRef = useCallback(
@@ -82,6 +83,9 @@ export function Tooltip({ content, side = "top", asChild = false, children }: To
     window.clearTimeout(leaveTimer.current);
     window.clearTimeout(exitTimer.current);
     if (!content.trim()) return;
+    // A modal dialog lives above the document's stacking contexts. Keep its
+    // tooltips in that same top layer instead of behind the modal backdrop.
+    setPortalHost(anchor.current?.closest<HTMLDialogElement>("dialog[open]") ?? document.body);
     setPresent(true);
     setOpen(true);
   }, [content]);
@@ -268,6 +272,7 @@ export function Tooltip({ content, side = "top", asChild = false, children }: To
     <>
       {trigger}
       {present &&
+        portalHost &&
         createPortal(
           <div
             className="tooltip-bubble"
@@ -282,7 +287,7 @@ export function Tooltip({ content, side = "top", asChild = false, children }: To
           >
             {content}
           </div>,
-          document.body,
+          portalHost,
         )}
     </>
   );

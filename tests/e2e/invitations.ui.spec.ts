@@ -170,6 +170,14 @@ test("an owner invites by email, a new reviewer explicitly joins, and removal en
       name: `Retirer ${guest.name}`,
       exact: true,
     });
+    await remove.hover();
+    const tooltip = refreshedOwnerDialog.getByRole("tooltip", {
+      name: `Retirer ${guest.name}`,
+      exact: true,
+    });
+    // A body-level portal would sit behind the native dialog's top layer.
+    await expect(tooltip).toBeVisible();
+    expect(await tooltip.evaluate((element) => element.closest("dialog")?.open)).toBe(true);
     await remove.focus();
     await page.keyboard.press("Enter");
     await expect(
