@@ -22,7 +22,7 @@ function reviewFixture({
       url: pdf ? null : "https://onboarding.example.test/work",
       fileName: pdf ? "onboarding.pdf" : null,
       shareToken: randomUUID().replaceAll("-", "").padEnd(43, "a"),
-      ownerId,
+      workspaceId: randomUUID(),
       archived,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -35,7 +35,7 @@ function reviewFixture({
       email: "onboarding-reviewer@example.test",
       name: "Demo reviewer",
     },
-    isOwner: owner,
+    canManage: owner,
   };
 }
 

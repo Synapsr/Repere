@@ -29,6 +29,8 @@ jobs:
       - run: npm run format:check
       - run: npm run typecheck
       - run: npm test
+      - name: Verify fresh install and upgrade from 0.1.1 on isolated MySQL
+        run: npm run test:migrations
       - run: npx playwright install --with-deps chromium firefox
       - name: Start complete local stack (MySQL, migrations, app, native preview, Mailpit)
         run: npm run setup

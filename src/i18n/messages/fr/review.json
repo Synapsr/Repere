@@ -79,5 +79,10 @@
   "onboardingResumeTitle": "Reprenez la navigation",
   "onboardingResume": "Repassez sur Naviguer pour continuer à parcourir le site.",
   "onboardingStart": "C’est parti",
-  "onboardingReplay": "Revoir le tutoriel"
+  "onboardingReplay": "Revoir le tutoriel",
+  "workspaceLoadError": "Impossible de charger vos espaces.",
+  "moveTitle": "Changer d’espace",
+  "moveDescription": "Le lien de partage et tous les retours sont conservés.",
+  "destinationWorkspace": "Espace de destination",
+  "moveProject": "Déplacer le projet"
 }

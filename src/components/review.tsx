@@ -28,7 +28,7 @@ import {
   MoreHorizontal,
   CircleHelp,
 } from "lucide-react";
-import type { Anchor, Feedback, ReviewData } from "../../shared/types";
+import type { Anchor, Feedback, ReviewData, Workspace } from "../../shared/types";
 import { api, relativeDate } from "@/lib/client";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Logo, Avatar, Modal, Spinner, ErrorBanner } from "./ui";
@@ -235,7 +235,11 @@ export function Review({ token }: { token: string }) {
     <div className="review-layout">
       <header className="review-header">
         <div className="review-project-heading">
-          <Link href="/" className="icon-button" aria-label={t("back")}>
+          <Link
+            href={data.canManage ? `/?workspace=${project.workspaceId}` : "/"}
+            className="icon-button"
+            aria-label={t("back")}
+          >
             <ArrowLeft size={19} />
           </Link>
           <h1 title={project.name}>{project.name}</h1>
@@ -331,7 +335,7 @@ export function Review({ token }: { token: string }) {
                   {t("onboardingReplay")}
                 </button>
               )}
-              {data.isOwner && (
+              {data.canManage && (
                 <button
                   className="review-option-action"
                   onClick={() => {
@@ -354,7 +358,7 @@ export function Review({ token }: { token: string }) {
               <Archive size={28} />
               <h2>{t("archivedTitle")}</h2>
               <p>{t("archivedDescription")}</p>
-              {data.isOwner && (
+              {data.canManage && (
                 <button className="button secondary" onClick={() => setSettings(true)}>
                   {t("settings")}
                 </button>
@@ -482,7 +486,9 @@ export function Review({ token }: { token: string }) {
                     selected={selected === comment.id}
                     onSelect={() => choose(comment.id)}
                     onStatus={() => updateStatus(comment)}
-                    canResolve={!readOnly && (data.isOwner || data.user?.id === comment.author.id)}
+                    canResolve={
+                      !readOnly && (data.canManage || data.user?.id === comment.author.id)
+                    }
                     readOnly={readOnly}
                     token={token}
                     onReply={refresh}
@@ -514,7 +520,7 @@ export function Review({ token }: { token: string }) {
       </div>
       {project.type === "website" && !readOnly && (
         <ReviewOnboarding
-          autoShow={!data.isOwner}
+          autoShow={!data.canManage}
           open={onboardingOpen}
           onClose={() => setOnboardingOpen(false)}
         />
@@ -701,6 +707,22 @@ function ProjectSettings({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [rotate, setRotate] = useState(false);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [workspaceId, setWorkspaceId] = useState(data.project.workspaceId);
+  const [workspaceError, setWorkspaceError] = useState("");
+  const workspaceFailure = useEffectEvent(() => t("workspaceLoadError"));
+  useEffect(() => {
+    const controller = new AbortController();
+    api<{ workspaces: Workspace[] }>("/api/workspaces", { signal: controller.signal })
+      .then(({ workspaces }) => {
+        if (!controller.signal.aborted) setWorkspaces(workspaces);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted)
+          setWorkspaceError(error instanceof Error ? error.message : workspaceFailure());
+      });
+    return () => controller.abort();
+  }, []);
   async function update(values: Record<string, unknown>) {
     setBusy(true);
     setError("");
@@ -742,6 +764,43 @@ function ProjectSettings({
           <Check size={15} />
         </button>
       </form>
+      {(workspaces.length > 1 || workspaceError) && (
+        <div className="settings-section">
+          <h3>{t("moveTitle")}</h3>
+          <p>{t("moveDescription")}</p>
+          <ErrorBanner message={workspaceError} />
+          {workspaces.length > 1 && (
+            <form
+              className="workspace-move-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void update({ workspaceId });
+              }}
+            >
+              <label htmlFor="project-workspace">{t("destinationWorkspace")}</label>
+              <select
+                id="project-workspace"
+                value={workspaceId}
+                onChange={(event) => setWorkspaceId(event.target.value)}
+                disabled={busy}
+              >
+                {workspaces.map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="button secondary"
+                disabled={busy || workspaceId === data.project.workspaceId}
+              >
+                {t("moveProject")}
+                <ArrowUpRight size={15} />
+              </button>
+            </form>
+          )}
+        </div>
+      )}
       <div className="settings-section">
         <h3>{t(data.project.archived ? "unarchiveTitle" : "archiveTitle")}</h3>
         <p>{t(data.project.archived ? "unarchiveDescription" : "archiveDescription")}</p>

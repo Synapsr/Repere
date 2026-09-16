@@ -57,5 +57,13 @@
   "guideShareTitle": "Share its link",
   "guideShare": "Guests sign in with a code sent by email. You know who left each comment.",
   "guideCommentTitle": "Point, discuss, resolve",
-  "guideComment": "Browse the site normally. Choose Comment to leave a pin. Click any comment to return to its exact spot."
+  "guideComment": "Browse the site normally. Choose Comment to leave a pin. Click any comment to return to its exact spot.",
+  "switchWorkspace": "Switch workspace",
+  "workspaces": "Workspaces",
+  "newWorkspace": "Create workspace",
+  "workspaceName": "Workspace name",
+  "workspacePlaceholder": "e.g. Studio Alma",
+  "createWorkspace": "Create workspace",
+  "workspaceCreateError": "Could not create the workspace.",
+  "retry": "Try again"
 }

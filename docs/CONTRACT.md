@@ -9,13 +9,15 @@ JSON errors contain a readable localized `error` string and a stable `code`, wit
 | `POST /api/auth/verify`                           | `{email,code}`                                                                              | `{user}`, HTTP-only session cookie                       |
 | `POST /api/auth/logout`                           | —                                                                                           | `{ok:true}`, session revoked                             |
 | `POST /api/locale`                                | `{locale: "en" \| "fr"}`                                                                    | `{locale}`, persistent language-preference cookie        |
-| `GET /api/projects`                               | —                                                                                           | `{projects: Project[]}`, owner only                      |
-| `POST /api/projects`                              | JSON `{name,description?,type:"website",url}` or multipart `name,description,type=pdf,file` | `{project}`, authenticated                               |
-| `PATCH /api/projects/[id]`                        | `{name?,description?,archived?,rotateShareToken?}`                                          | `{project}`, owner only                                  |
+| `GET /api/workspaces`                             | —                                                                                           | `{workspaces: Workspace[]}`, signed-in memberships only  |
+| `POST /api/workspaces`                            | `{name}`                                                                                    | `{workspace}`, creator becomes owner                     |
+| `GET /api/projects?workspaceId=<id>`              | —                                                                                           | `{projects: Project[]}`, workspace members only          |
+| `POST /api/projects?workspaceId=<id>`             | JSON `{name,description?,type:"website",url}` or multipart `name,description,type=pdf,file` | `{project}`, authenticated                               |
+| `PATCH /api/projects/[id]`                        | `{name?,description?,archived?,rotateShareToken?,workspaceId?}`                             | `{project}`, workspace members only                      |
 | `GET /api/reviews/[token]`                        | —                                                                                           | `ReviewData`, metadata with link; contents after sign-in |
 | `GET /api/reviews/[token]/file`                   | —                                                                                           | Private PDF, authenticated and valid link                |
 | `POST /api/reviews/[token]/comments`              | `{body,anchor}`                                                                             | `{comment: Feedback}`                                    |
-| `PATCH /api/reviews/[token]/comments/[id]`        | `{status}`                                                                                  | `{comment}`, author or owner                             |
+| `PATCH /api/reviews/[token]/comments/[id]`        | `{status}`                                                                                  | `{comment}`, author or workspace member                  |
 | `POST /api/reviews/[token]/comments/[id]/replies` | `{body}`                                                                                    | `{reply}`                                                |
 | `POST /api/reviews/[token]/preview`               | —                                                                                           | `PreviewSession`, authenticated active website project   |
 | `GET /api/health`                                 | —                                                                                           | `{ok:true}`, 503 when MySQL is unavailable               |
@@ -40,3 +42,9 @@ The proxy has a separate control API: `POST /__repere/sessions`, authenticated w
 ## Locale
 
 A valid `repere_locale` cookie takes precedence over `Accept-Language`; unsupported preferences fall back to English. Regional language tags map to supported English/French catalogs. Locale changes do not change routes or review links. Treat error codes as identifiers and translated messages as display text.
+
+## Workspace selection and management
+
+`Workspace` is `{id,name,role: "owner" | "member"}` for the current user. `Project.workspaceId` replaces `ownerId`; `ReviewData.canManage` replaces `isOwner`. Guests have `canManage: false` even when they know the sharing link.
+
+Pass `workspaceId` in the projects endpoint query for both JSON and PDF multipart creation. Without it, the server uses the first accessible workspace for legacy clients; it never returns projects from all spaces. Unknown or inaccessible workspace IDs return 404. Project moves check both memberships and preserve review links and existing feedback.

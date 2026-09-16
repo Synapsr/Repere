@@ -8,6 +8,7 @@ import { appOrigin, ownerEmailAllowed, randomToken } from "./security";
 import { parsePdfUpload, removePdf, storePdf } from "./uploads";
 import { assertAnchorMatchesProject, websiteProjectSchema, readJson } from "./validation";
 import { rateLimit } from "./rate-limit";
+import { requireWorkspaceMembership, resolveWorkspace, workspaceMembership } from "./workspaces";
 
 type ProjectRow = typeof projects.$inferSelect;
 export function publicProject(row: ProjectRow): Project {
@@ -19,7 +20,7 @@ export function publicProject(row: ProjectRow): Project {
     url: row.url,
     fileName: row.fileName,
     shareToken: row.shareToken,
-    ownerId: row.ownerId,
+    workspaceId: row.workspaceId,
     archived: row.archived,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -39,8 +40,16 @@ export async function projectByToken(token: string, user: User | null) {
     .where(eq(projects.shareToken, token))
     .limit(1);
   if (!project) throw new ApiError(404, "REVIEW_LINK_UNAVAILABLE");
-  if (project.archived && project.ownerId !== user?.id) throw new ApiError(410, "PROJECT_ARCHIVED");
+  if (project.archived && !(await canManageProject(project, user)))
+    throw new ApiError(410, "PROJECT_ARCHIVED");
   return project;
+}
+
+export async function canManageProject(
+  project: Pick<ProjectRow, "workspaceId">,
+  user: User | null,
+) {
+  return !!user && !!(await workspaceMembership(project.workspaceId, user.id));
 }
 
 /** Lock project before child rows everywhere, serializing counters and avoiding lock-order deadlocks. */
@@ -56,19 +65,21 @@ async function writableProject(tx: Transaction, token: string) {
   return project;
 }
 
-export async function listProjects(user: User) {
+export async function listProjects(user: User, requestedWorkspaceId?: string) {
+  const workspaceId = await resolveWorkspace(user, requestedWorkspaceId);
   const rows = await database()
     .select()
     .from(projects)
-    .where(eq(projects.ownerId, user.id))
+    .where(eq(projects.workspaceId, workspaceId))
     .orderBy(desc(projects.updatedAt));
   return rows.map(publicProject);
 }
 
-export async function createProject(request: Request, user: User) {
+export async function createProject(request: Request, user: User, requestedWorkspaceId?: string) {
   if (!ownerEmailAllowed(user.email)) throw new ApiError(403, "OWNER_EMAIL_NOT_ALLOWED");
   await rateLimit("project-create", user.id, 30, 60 * 60 * 1000);
-  const common = { id: randomUUID(), ownerId: user.id, shareToken: randomToken() };
+  const workspaceId = await resolveWorkspace(user, requestedWorkspaceId);
+  const common = { id: randomUUID(), workspaceId, createdBy: user.id, shareToken: randomToken() };
   let storageKey: string | undefined;
   try {
     if (request.headers.get("content-type")?.startsWith("multipart/form-data")) {
@@ -121,15 +132,16 @@ export async function updateProject(
     description?: string | null;
     archived?: boolean;
     rotateShareToken?: true;
+    workspaceId?: string;
   },
 ) {
   const project = await database().transaction(async (tx) => {
-    const [row] = await tx
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, id), eq(projects.ownerId, user.id)))
-      .for("update");
+    const [row] = await tx.select().from(projects).where(eq(projects.id, id)).for("update");
     if (!row) throw new ApiError(404, "PROJECT_NOT_FOUND");
+    if (!(await workspaceMembership(row.workspaceId, user.id, tx)))
+      throw new ApiError(404, "PROJECT_NOT_FOUND");
+    if (input.workspaceId !== undefined)
+      await requireWorkspaceMembership(input.workspaceId, user.id, tx);
     const { rotateShareToken, ...changes } = input;
     const patch = {
       ...changes,
@@ -237,7 +249,10 @@ export async function updateComment(
       .where(and(eq(comments.id, id), eq(comments.projectId, project.id)))
       .for("update");
     if (!comment) throw new ApiError(404, "COMMENT_NOT_FOUND");
-    if (project.ownerId !== user.id && comment.authorId !== user.id)
+    if (
+      comment.authorId !== user.id &&
+      !(await workspaceMembership(project.workspaceId, user.id, tx))
+    )
       throw new ApiError(403, "COMMENT_STATUS_FORBIDDEN");
     if (comment.status !== status) {
       await tx.update(comments).set({ status, updatedAt: new Date() }).where(eq(comments.id, id));

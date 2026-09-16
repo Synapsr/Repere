@@ -18,7 +18,7 @@ async function previewFixture(page: Page, failure: "request" | "handshake") {
       url: "https://opening.example.test/work",
       fileName: null,
       shareToken: randomUUID().replaceAll("-", "").padEnd(43, "a"),
-      ownerId,
+      workspaceId: randomUUID(),
       archived: false,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -27,7 +27,7 @@ async function previewFixture(page: Page, failure: "request" | "handshake") {
     },
     comments: [],
     user: { id: ownerId, email: "opening@example.test", name: "Preview owner" },
-    isOwner: true,
+    canManage: true,
   };
   const origin = `https://${"a".repeat(48)}.preview.example.test`;
   const session: PreviewSession = {

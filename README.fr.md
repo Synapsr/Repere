@@ -43,16 +43,17 @@ Repère est une alternative open source indépendante pour le cas d'usage de ret
 
 ## Fonctionnalités
 
-|                               | Ce que vous pouvez faire                                                                                                              |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| **Sites et PDF**              | Ajouter une URL ou importer un PDF privé jusqu'à 20 Mio. Rechercher et filtrer vos projets.                                           |
-| **Un lien partagé**           | Inviter des participants qui vérifient leur email avec un code à usage unique. Aucun mot de passe à créer.                            |
-| **Des retours précis**        | Attacher un point à un élément et une page du site, ou à une position sur une page PDF.                                               |
-| **Une navigation naturelle**  | Parcourir le site, sélectionner du texte, suivre ses liens et utiliser ses contrôles. Passer en mode commentaire pour poser un point. |
-| **Des conversations claires** | Répondre, résoudre, rouvrir et filtrer les retours. Chaque commentaire conserve son auteur.                                           |
-| **La gestion des projets**    | Renommer, archiver, restaurer et renouveler le lien de partage. Les conversations archivées restent lisibles par le propriétaire.     |
-| **Français et anglais**       | Choisir votre langue ou utiliser celle de votre navigateur. Le lien du projet est identique dans les deux langues.                    |
-| **Votre infrastructure**      | Exécuter Next.js, MySQL et le service d'aperçu avec Docker. Conserver les PDF dans un volume privé.                                   |
+|                               | Ce que vous pouvez faire                                                                                                                  |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Espaces de travail**        | Créer des espaces, passer de l’un à l’autre et déplacer des projets sans perdre leurs retours ni leurs liens.                             |
+| **Sites et PDF**              | Ajouter une URL ou importer un PDF privé jusqu'à 20 Mio. Rechercher et filtrer vos projets.                                               |
+| **Un lien partagé**           | Inviter des participants qui vérifient leur email avec un code à usage unique. Aucun mot de passe à créer.                                |
+| **Des retours précis**        | Attacher un point à un élément et une page du site, ou à une position sur une page PDF.                                                   |
+| **Une navigation naturelle**  | Parcourir le site, sélectionner du texte, suivre ses liens et utiliser ses contrôles. Passer en mode commentaire pour poser un point.     |
+| **Des conversations claires** | Répondre, résoudre, rouvrir et filtrer les retours. Chaque commentaire conserve son auteur.                                               |
+| **La gestion des projets**    | Renommer, archiver, restaurer et renouveler le lien de partage. Les conversations archivées restent lisibles par les membres de l’espace. |
+| **Français et anglais**       | Choisir votre langue ou utiliser celle de votre navigateur. Le lien du projet est identique dans les deux langues.                        |
+| **Votre infrastructure**      | Exécuter Next.js, MySQL et le service d'aperçu avec Docker. Conserver les PDF dans un volume privé.                                       |
 
 Le code ne comporte ni formules tarifaires ni frais par participant. L'hébergement et l'envoi des emails restent à votre charge. Les conversations se rafraîchissent toutes les huit secondes lorsque l'onglet est visible. Les miniatures des projets sont des illustrations, pas des captures actualisées.
 
@@ -203,7 +204,7 @@ La priorité actuelle est un parcours complet et compréhensible de points et co
 - **Retours audio :** enregistrement, lecture et transcription Whisper optionnelle. Le schéma réserve les métadonnées, la durée, l'état de transcription et le fournisseur.
 - **Suggestions de texte :** sélectionner un passage, proposer un remplacement et prévisualiser la modification dans la page. Les textes original et proposé disposent de champs réservés.
 - Notifications de commentaires, exports, suppression des comptes et règles de conservation.
-- Organisations, rôles d'équipe et invitations.
+- Invitations dans les espaces, gestion des membres et rôles d’équipe détaillés.
 - Sélection textuelle dans les PDF, versions de documents et pièces jointes supplémentaires.
 - Nouveaux cas de compatibilité, stockage S3 et sessions d'aperçu distribuées.
 

@@ -1,4 +1,5 @@
 export type User = { id: string; email: string; name: string };
+export type Workspace = { id: string; name: string; role: "owner" | "member" };
 export type WebsiteAnchor = {
   type: "website";
   url: string;
@@ -21,7 +22,7 @@ export type Project = {
   url: string | null;
   fileName: string | null;
   shareToken: string;
-  ownerId: string;
+  workspaceId: string;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
@@ -46,5 +47,5 @@ export type ReviewData = {
   project: Project;
   comments: Feedback[];
   user: User | null;
-  isOwner: boolean;
+  canManage: boolean;
 };

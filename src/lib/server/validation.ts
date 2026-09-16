@@ -23,6 +23,17 @@ export const authVerifySchema = z
     code: z.string().regex(/^\d{6}$/, "OTP_FORMAT"),
   })
   .strict();
+export const workspaceIdSchema = z.uuid("WORKSPACE_ID_INVALID");
+export const workspaceCreateSchema = z
+  .object({
+    name: z.string().trim().min(1, "WORKSPACE_NAME_REQUIRED").max(80, "WORKSPACE_NAME_TOO_LONG"),
+  })
+  .strict();
+export function requestedWorkspaceId(request: Pick<Request, "url">) {
+  const values = new URL(request.url).searchParams.getAll("workspaceId");
+  if (values.length > 1) throw new ApiError(400, "WORKSPACE_ID_INVALID");
+  return values.length ? workspaceIdSchema.parse(values[0]) : undefined;
+}
 export const projectFieldsSchema = z.object({
   name: z.string().trim().min(1, "PROJECT_NAME_REQUIRED").max(160, "PROJECT_NAME_TOO_LONG"),
   description: z.string().trim().max(2000, "DESCRIPTION_TOO_LONG").optional(),
@@ -41,6 +52,7 @@ export const projectUpdateSchema = z
     description: z.string().trim().max(2000, "DESCRIPTION_TOO_LONG").nullable().optional(),
     archived: z.boolean().optional(),
     rotateShareToken: z.literal(true).optional(),
+    workspaceId: workspaceIdSchema.optional(),
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, "NO_CHANGES");

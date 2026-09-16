@@ -1,6 +1,14 @@
 "use client";
-import { useEffect, useState, useMemo, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import {
+  Suspense,
+  useEffect,
+  useEffectEvent,
+  useState,
+  useMemo,
+  useRef,
+  type FormEvent,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { LanguageSwitcher } from "./language-switcher";
 import Link from "next/link";
@@ -22,14 +30,17 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import type { Project, User } from "../../shared/types";
+import type { Project, User, Workspace } from "../../shared/types";
 import { api, relativeDate } from "@/lib/client";
 import { Logo, Avatar, Modal, Spinner, ErrorBanner, OpenSourceFooter } from "./ui";
+import { WorkspaceSwitcher } from "./workspace-switcher";
 
 export function CreateProject({
+  workspaceId,
   onClose,
   onCreated,
 }: {
+  workspaceId: string;
   onClose: () => void;
   onCreated: (p: Project) => void;
 }) {
@@ -40,10 +51,14 @@ export function CreateProject({
   const [file, setFile] = useState<File | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const request = useRef<AbortController | null>(null);
+  useEffect(() => () => request.current?.abort(), []);
   async function submit(event: FormEvent) {
     event.preventDefault();
     setPending(true);
     setError("");
+    const controller = new AbortController();
+    request.current = controller;
     try {
       let body: FormData | string;
       if (type === "pdf") {
@@ -57,15 +72,19 @@ export function CreateProject({
         const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`;
         body = JSON.stringify({ name, type, url: normalized });
       }
-      const { project } = await api<{ project: Project }>("/api/projects", {
-        method: "POST",
-        body,
-      });
-      onCreated(project);
+      const { project } = await api<{ project: Project }>(
+        `/api/projects?workspaceId=${workspaceId}`,
+        {
+          method: "POST",
+          body,
+          signal: controller.signal,
+        },
+      );
+      if (!controller.signal.aborted) onCreated(project);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("createError"));
+      if (!controller.signal.aborted) setError(e instanceof Error ? e.message : t("createError"));
     } finally {
-      setPending(false);
+      if (!controller.signal.aborted) setPending(false);
     }
   }
   return (
@@ -150,10 +169,151 @@ export function CreateProject({
 }
 
 export function Dashboard() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardEntry />
+    </Suspense>
+  );
+}
+
+function DashboardLoading() {
+  const t = useTranslations("dashboard");
+  return (
+    <main className="center-page">
+      <Logo />
+      <Spinner label={t("loading")} />
+    </main>
+  );
+}
+
+function DashboardEntry() {
+  const t = useTranslations("dashboard");
+  const router = useRouter();
+  const search = useSearchParams();
+  const [account, setAccount] = useState<{
+    user: User;
+    workspaces: Workspace[];
+    preferred: string | null;
+  } | null>(null);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const [focusSwitcher, setFocusSwitcher] = useState(false);
+  const loadFailure = useEffectEvent(() => t("loadError"));
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      try {
+        const { user } = await api<{ user: User | null }>("/api/auth/me", {
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
+        if (!user) {
+          router.replace("/login");
+          return;
+        }
+        const { workspaces } = await api<{ workspaces: Workspace[] }>("/api/workspaces", {
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
+        if (!workspaces.length) throw new Error(loadFailure());
+        let preferred: string | null = null;
+        try {
+          preferred = localStorage.getItem(`repere.workspace.v1:${user.id}`);
+        } catch {
+          /* Storage can be disabled. The URL still remembers the workspace. */
+        }
+        setAccount({ user, workspaces, preferred });
+      } catch (error) {
+        if (!controller.signal.aborted)
+          setError(error instanceof Error ? error.message : loadFailure());
+      }
+    }
+    void load();
+    return () => controller.abort();
+  }, [router, retry]);
+
+  const requested = search.get("workspace");
+  const workspace =
+    account?.workspaces.find((item) => item.id === requested) ??
+    account?.workspaces.find((item) => item.id === account.preferred) ??
+    account?.workspaces[0];
+  const workspaceId = workspace?.id;
+  const userId = account?.user.id;
+  useEffect(() => {
+    if (!workspaceId || !userId) return;
+    const next = new URL(window.location.href);
+    if (next.searchParams.get("workspace") !== workspaceId) {
+      next.searchParams.set("workspace", workspaceId);
+      window.history.replaceState(null, "", `${next.pathname}${next.search}${next.hash}`);
+    }
+    try {
+      localStorage.setItem(`repere.workspace.v1:${userId}`, workspaceId);
+    } catch {
+      /* Optional preference only. */
+    }
+  }, [workspaceId, userId, requested]);
+
+  function select(nextWorkspace: Workspace) {
+    setFocusSwitcher(true);
+    setAccount((current) => (current ? { ...current, preferred: nextWorkspace.id } : current));
+    const next = new URL(window.location.href);
+    next.searchParams.set("workspace", nextWorkspace.id);
+    window.history.pushState(null, "", `${next.pathname}${next.search}${next.hash}`);
+  }
+  if (!account || !workspace) {
+    if (!error) return <DashboardLoading />;
+    return (
+      <main className="center-page workspace-bootstrap-error">
+        <Logo />
+        <ErrorBanner message={error} />
+        <button
+          className="button primary"
+          onClick={() => {
+            setError("");
+            setRetry((value) => value + 1);
+          }}
+        >
+          {t("retry")}
+        </button>
+      </main>
+    );
+  }
+  return (
+    <WorkspaceDashboard
+      key={workspace.id}
+      user={account.user}
+      workspace={workspace}
+      workspaces={account.workspaces}
+      onSelectWorkspace={select}
+      focusSwitcher={focusSwitcher}
+      onCreatedWorkspace={(created) => {
+        setAccount((current) =>
+          current ? { ...current, workspaces: [...current.workspaces, created] } : current,
+        );
+        select(created);
+      }}
+    />
+  );
+}
+
+function WorkspaceDashboard({
+  user,
+  workspace,
+  workspaces,
+  onSelectWorkspace,
+  onCreatedWorkspace,
+  focusSwitcher,
+}: {
+  user: User;
+  workspace: Workspace;
+  workspaces: Workspace[];
+  onSelectWorkspace: (workspace: Workspace) => void;
+  onCreatedWorkspace: (workspace: Workspace) => void;
+  focusSwitcher: boolean;
+}) {
   const t = useTranslations("dashboard");
   const locale = useLocale();
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -164,30 +324,29 @@ export function Dashboard() {
   const [filter, setFilter] = useState("all");
   const [demoPending, setDemoPending] = useState(false);
   const [copiedId, setCopiedId] = useState("");
+  const demoRequest = useRef<AbortController | null>(null);
+  const loadFailure = useEffectEvent(() => t("loadError"));
   useEffect(() => {
-    let active = true;
+    const controller = new AbortController();
     async function load() {
       try {
-        const { user } = await api<{ user: User | null }>("/api/auth/me");
-        if (!active) return;
-        if (!user) {
-          router.replace("/login");
-          return;
-        }
-        setUser(user);
-        const data = await api<{ projects: Project[] }>("/api/projects");
-        if (active) setProjects(data.projects);
+        const data = await api<{ projects: Project[] }>(
+          `/api/projects?workspaceId=${workspace.id}`,
+          { signal: controller.signal },
+        );
+        if (!controller.signal.aborted) setProjects(data.projects);
       } catch (e) {
-        if (active) setError(e instanceof Error ? e.message : t("loadError"));
+        if (!controller.signal.aborted) setError(e instanceof Error ? e.message : loadFailure());
       } finally {
-        if (active) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
     void load();
     return () => {
-      active = false;
+      controller.abort();
+      demoRequest.current?.abort();
     };
-  }, [router, t]);
+  }, [workspace.id]);
   const activeProjects = projects.filter((p) => !p.archived);
   const openCount = activeProjects.reduce((sum, p) => sum + p.commentCount - p.resolvedCount, 0);
   const resolvedCount = activeProjects.reduce((sum, p) => sum + p.resolvedCount, 0);
@@ -204,43 +363,39 @@ export function Dashboard() {
   async function demo() {
     setDemoPending(true);
     setError("");
+    const controller = new AbortController();
+    demoRequest.current = controller;
     try {
-      const { project } = await api<{ project: Project }>("/api/projects", {
-        method: "POST",
-        body: JSON.stringify({
-          name: t("demoName"),
-          type: "website",
-          url: `${window.location.origin}/demo-site`,
-        }),
-      });
-      router.push(`/r/${project.shareToken}`);
+      const { project } = await api<{ project: Project }>(
+        `/api/projects?workspaceId=${workspace.id}`,
+        {
+          method: "POST",
+          signal: controller.signal,
+          body: JSON.stringify({
+            name: t("demoName"),
+            type: "website",
+            url: `${window.location.origin}/demo-site`,
+          }),
+        },
+      );
+      if (!controller.signal.aborted) router.push(`/r/${project.shareToken}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("createError"));
+      if (!controller.signal.aborted) setError(e instanceof Error ? e.message : t("createError"));
     } finally {
-      setDemoPending(false);
+      if (!controller.signal.aborted) setDemoPending(false);
     }
   }
-  if (loading)
-    return (
-      <main className="center-page">
-        <Logo />
-        <Spinner label={t("loading")} />
-      </main>
-    );
-  if (!user)
-    return (
-      <main className="center-page">
-        <Logo />
-        <ErrorBanner message={error} />
-        <Link href="/login" className="button primary">
-          {t("signIn")}
-        </Link>
-      </main>
-    );
   return (
     <div className="dashboard-layout">
       <aside className="sidebar">
         <Logo />
+        <WorkspaceSwitcher
+          workspace={workspace}
+          workspaces={workspaces}
+          onSelect={onSelectWorkspace}
+          onCreated={onCreatedWorkspace}
+          autoFocus={focusSwitcher}
+        />
         <nav aria-label={t("navigation")}>
           <button
             className={view === "active" ? "nav-item active" : "nav-item"}
@@ -335,7 +490,11 @@ export function Dashboard() {
             </div>
           </div>
           <ErrorBanner message={error} />
-          {filtered.length ? (
+          {loading ? (
+            <div className="workspace-projects-loading" role="status">
+              <Spinner label={t("loading")} />
+            </div>
+          ) : filtered.length ? (
             <div className="project-grid">
               {filtered.map((project, index) => (
                 <article
@@ -485,6 +644,7 @@ export function Dashboard() {
       </div>
       {modal && (
         <CreateProject
+          workspaceId={workspace.id}
           onClose={() => setModal(false)}
           onCreated={(p) => router.push(`/r/${p.shareToken}`)}
         />

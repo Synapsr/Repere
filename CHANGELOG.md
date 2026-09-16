@@ -2,6 +2,15 @@
 
 This file records user-visible changes. Container version `0.1.1` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
+## Unreleased
+
+### Added
+
+- Workspaces with a compact switcher, creation dialog and remembered selection.
+- Projects belong to workspaces; existing projects migrate into their previous owner’s first space with their links, PDFs, comments and sessions preserved.
+- Move a project between accessible workspaces from project settings without changing its review link.
+- Workspace membership governs project management; guests retain access through shared review links. Team invitations and member administration are future work.
+
 ## 0.1.1 — 2026-09-15
 
 The published image was built from [`8e15dded`](https://github.com/Synapsr/Repere/commit/8e15dded1c922333839022e27c1838e3154a261f). Tags `0.1.1`, `0.1` and `latest` identify this AMD64/ARM64 index:

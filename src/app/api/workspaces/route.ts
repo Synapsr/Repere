@@ -1,20 +1,22 @@
 import { requireUser } from "@/lib/server/auth";
 import { handle, json } from "@/lib/server/errors";
-import { createProject, listProjects } from "@/lib/server/projects";
 import { assertSameOrigin } from "@/lib/server/security";
-import { requestedWorkspaceId } from "@/lib/server/validation";
+import { readJson, workspaceCreateSchema } from "@/lib/server/validation";
+import { createWorkspace, listWorkspaces } from "@/lib/server/workspaces";
+
 export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   return handle(request, async () =>
-    json({ projects: await listProjects(await requireUser(), requestedWorkspaceId(request)) }),
+    json({ workspaces: await listWorkspaces(await requireUser()) }),
   );
 }
+
 export async function POST(request: Request) {
   return handle(request, async () => {
     assertSameOrigin(request);
-    return json(
-      { project: await createProject(request, await requireUser(), requestedWorkspaceId(request)) },
-      201,
-    );
+    const user = await requireUser();
+    const input = workspaceCreateSchema.parse(await readJson(request));
+    return json({ workspace: await createWorkspace(user, input.name) }, 201);
   });
 }

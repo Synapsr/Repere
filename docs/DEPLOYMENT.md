@@ -49,8 +49,13 @@ Use **`compose.yaml` only** in production. The development overlay adds Mailpit,
 5. Start the stack:
 
    ```sh
-   docker compose -f compose.yaml up --build -d --wait
+   docker compose -f compose.yaml build
    ```
+
+docker compose -f compose.yaml stop app
+docker compose -f compose.yaml up -d --wait
+
+````
 
 6. From the real HTTPS domains, verify email-code delivery, an authenticated review, site cookies and representative PDF documents. DNS, TLS and external SMTP are deployment-specific checks; the local suite does not cover them.
 
@@ -102,10 +107,14 @@ Preview sessions are temporary in-memory state and are not backed up. Restarting
 Back up first, obtain the intended source revision, review its migrations and changelog, then rebuild:
 
 ```sh
-docker compose -f compose.yaml up --build -d --wait
+docker compose -f compose.yaml build
+docker compose -f compose.yaml stop app
+docker compose -f compose.yaml up -d --wait
 docker compose -f compose.yaml ps
 docker compose -f compose.yaml logs --tail=100 app preview migrate
-```
+````
+
+The 0.2.0 workspace upgrade needs no new environment variables. It preserves existing projects and sharing links, creates a first workspace for each former project owner, and replaces user ownership with workspace membership. On EasyPanel keep **zero-downtime deployment disabled** for this schema upgrade so the previous app cannot write during migration.
 
 MySQL DDL migrations are not universally transactional. Do not assume an application image rollback also reverses a schema change. Keep the prior source revision and a tested restore plan.
 

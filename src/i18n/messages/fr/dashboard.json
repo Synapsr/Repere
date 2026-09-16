@@ -57,5 +57,13 @@
   "guideShareTitle": "Partagez son lien",
   "guideShare": "Vos invités s’identifient avec un code reçu par email. Chaque retour a son auteur.",
   "guideCommentTitle": "Pointez, discutez, résolvez",
-  "guideComment": "Naviguez normalement. Choisissez Commenter pour poser un point. Cliquez sur un retour pour retrouver son emplacement."
+  "guideComment": "Naviguez normalement. Choisissez Commenter pour poser un point. Cliquez sur un retour pour retrouver son emplacement.",
+  "switchWorkspace": "Changer d’espace",
+  "workspaces": "Espaces",
+  "newWorkspace": "Créer un espace",
+  "workspaceName": "Nom de l’espace",
+  "workspacePlaceholder": "Ex. Studio Alma",
+  "createWorkspace": "Créer l’espace",
+  "workspaceCreateError": "Impossible de créer cet espace.",
+  "retry": "Réessayer"
 }

@@ -410,6 +410,18 @@
   min-height: 30px;
   font-size: 11px;
 }
+.workspace-move-form select {
+  width: 100%;
+  min-height: 42px;
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
 .review-layout .viewer-state {
   background: #f8f9fc;
   color: #71798d;

@@ -148,8 +148,8 @@ test("shared links preserve named comments, precise anchors, replies, ownership,
       status: "resolved",
       replies: [expect.objectContaining({ body: "Updated the contrast, thank you." })],
     });
-    expect(persisted.isOwner).toBe(false);
-    expect((await (await owner.get(route)).json()).isOwner).toBe(true);
+    expect(persisted.canManage).toBe(false);
+    expect((await (await owner.get(route)).json()).canManage).toBe(true);
     const listed = (await (await owner.get("/api/projects")).json()) as { projects: Project[] };
     expect(listed.projects.find((item) => item.id === project.id)).toMatchObject({
       commentCount: 1,

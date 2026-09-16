@@ -24,13 +24,19 @@ English and French use shared project URLs, without a locale path prefix. Locale
 
 API errors retain a readable `error` string and provide a stable `code`. The error text and OTP email use the request's resolved language; clients should branch on the code rather than matching translated prose. User-generated content is not translated.
 
-## Project access
+## Workspaces and project access
 
-Every project has an owner. Only that owner can rename, archive or renew its link. `ALLOWED_EMAIL_DOMAINS=agency.example,example.com` limits **project creation** to exact domains. Reviewers can still verify their own email and participate through a shared link. With no domain restriction, every verified email can create projects.
+Every project belongs to a workspace. `workspace_members` joins users to spaces with an `owner` or `member` role. Both roles can manage that space’s projects and resolve feedback. `projects.createdBy` is nullable audit information, never an authorization grant. Holding a review link does not grant workspace membership.
 
-A review link contains a random 256-bit token. Without sign-in, its holder can see project metadata, but not comments or the PDF. After sign-in, they can read feedback and reply. The project owner and a comment's author may resolve or reopen that comment. Signed-in participants see author names and emails; this model is intended for a link shared with a trusted group.
+The dashboard lists only the selected workspace’s projects. Its URL carries `?workspace=<id>`; the browser remembers the last space separately for each signed-in user. Every API request checks membership again. Moving a project requires membership in both source and destination; its ID, sharing token, comments and PDF storage stay intact.
 
-Rotating a link invalidates API requests using the old link. Archiving closes guest access and gives the owner a read-only view. A native preview already open may remain available until its session expires, at most one hour; it no longer authorizes comments through an invalid link. Writes recheck token and archive state under a lock.
+`GET /api/workspaces` creates a first space for an account with no memberships, serializing on its user row to avoid duplicates. Explicit workspace and project creation respect `ALLOWED_EMAIL_DOMAINS=agency.example,example.com`. Reviewers can still verify their email and participate through shared links. Team invitations and member administration are not exposed yet.
+
+The workspace migration creates one space per existing project owner, copies their membership, and assigns all their projects before enforcing the new foreign key. Existing project and comment IDs, share tokens, files and sessions are unchanged. The original project owner becomes `createdBy`. Back up MySQL and uploads before upgrading; stop the previous app while changing the schema. Reverting application code alone does not revert the migration.
+
+A review link contains a random 256-bit token. Without sign-in, its holder can see project metadata, but not comments or the PDF. After sign-in, they can read feedback and reply. Workspace members and a comment's author may resolve or reopen that comment. Signed-in participants see author names and emails; this model is intended for a link shared with a trusted group.
+
+Rotating a link invalidates API requests using the old link. Archiving closes guest access and gives workspace members a read-only view. A native preview already open may remain available until its session expires, at most one hour; it no longer authorizes comments through an invalid link. Writes recheck token and archive state under a lock.
 
 Comment numbers and counters are assigned in a transaction that locks the project first. A unique `(projectId, number)` constraint prevents duplicate numbering. Repeated resolution is idempotent. Anchor types must match the project; website anchors must retain its exact origin (scheme, host and port), while paths, query strings and fragments may differ.
 
@@ -45,6 +51,7 @@ Rate limits live in MySQL, are consumed under locks and survive application rest
 | OTP send per email                    | 3 / 10 minutes                             |
 | OTP send per network / whole instance | 30 / 10 minutes; 200 / 10 minutes globally |
 | OTP verification per email / network  | 20 / 10 minutes; 100 / 10 minutes          |
+| Workspace creation per user           | 20 / hour                                  |
 | Project creation per user             | 30 / hour                                  |
 | Comment or reply per user             | 60 / minute per action                     |
 | Status changes per user               | 120 / minute                               |
@@ -58,7 +65,7 @@ Uploads are limited to 20 MiB. The raw body is counted before multipart parsing,
 
 UUID filenames live outside `public/` in `UPLOAD_DIR` (fallback `./data/uploads`; setup uses `./uploads`, Compose `/app/uploads`). Directories and files use modes `0700` and `0600`. The app container must be able to write the volume. Failed project creation removes the newly written upload.
 
-Reading requires a valid session and current review link; only the owner retains access after archiving. The response streams bounded chunks, closes the file descriptor on completion/cancellation, and sets private/no-store caching, `nosniff` and a sandbox CSP.
+Reading requires a valid session and current review link; workspace members retain access after archiving. The response streams bounded chunks, closes the file descriptor on completion/cancellation, and sets private/no-store caching, `nosniff` and a sandbox CSP.
 
 PDF.js worker, decoding binaries, JavaScript fallbacks, CMaps, required fonts and ICC resources are copied from the pinned package during install. Their URLs include the PDF.js version; their upstream notices are distributed alongside them. Keep the viewer and these assets on the same version.
 

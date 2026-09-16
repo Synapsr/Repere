@@ -5,7 +5,7 @@ import {
   type Page,
 } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import type { Project, User, WebsiteAnchor } from "../../shared/types";
+import type { Project, User, WebsiteAnchor, Workspace } from "../../shared/types";
 
 export const baseURL = () =>
   process.env.E2E_BASE_URL ?? process.env.APP_URL ?? "http://localhost:3000";
@@ -71,12 +71,74 @@ export async function signIn(api: APIRequestContext, label: string) {
   return { ...person, user, code };
 }
 
-export async function createWebsite(api: APIRequestContext, label: string) {
-  const response = await api.post("/api/projects", {
+export async function createWebsite(api: APIRequestContext, label: string, workspaceId?: string) {
+  const route = workspaceId
+    ? `/api/projects?workspaceId=${encodeURIComponent(workspaceId)}`
+    : "/api/projects";
+  const response = await api.post(route, {
     data: { name: `${label} ${randomUUID().slice(0, 8)}`, type: "website", url: websiteURL() },
   });
   expect(response.ok(), await response.text()).toBeTruthy();
   return ((await response.json()) as { project: Project }).project;
+}
+
+export async function listWorkspaces(api: APIRequestContext) {
+  const response = await api.get("/api/workspaces");
+  expect(response.ok(), await response.text()).toBeTruthy();
+  return ((await response.json()) as { workspaces: Workspace[] }).workspaces;
+}
+
+export async function createWorkspace(api: APIRequestContext, name: string) {
+  const response = await api.post("/api/workspaces", { data: { name } });
+  expect(response.status(), await response.text()).toBe(201);
+  return ((await response.json()) as { workspace: Workspace }).workspace;
+}
+
+/** Workspace integration fixtures are deliberately restricted to the disposable local stack. */
+export function assertLocalWorkspaceEnvironment() {
+  for (const value of [baseURL(), process.env.MAILPIT_URL ?? "http://127.0.0.1:8026"]) {
+    if (!["localhost", "127.0.0.1", "[::1]"].includes(new URL(value).hostname)) {
+      throw new Error("Workspace integration tests require local application and Mailpit hosts.");
+    }
+  }
+}
+
+/** Membership has no public invitation API yet; create only this test user's member row. */
+export async function grantWorkspaceMember(workspaceId: string, userId: string) {
+  assertLocalWorkspaceEnvironment();
+  const databaseUrl = process.env.DATABASE_URL;
+  if (
+    !databaseUrl ||
+    !["localhost", "127.0.0.1", "[::1]"].includes(new URL(databaseUrl).hostname)
+  ) {
+    throw new Error("Workspace membership fixtures require a loopback MySQL DATABASE_URL.");
+  }
+  const { createConnection } = await import("mysql2/promise");
+  const connection = await createConnection(databaseUrl);
+  try {
+    const [rows] = await connection.execute("SELECT email FROM users WHERE id = ?", [userId]);
+    const user = (rows as { email: string }[])[0];
+    if (!user || !/^e2e-[^@]+@example\.test$/.test(user.email)) {
+      throw new Error("Membership fixtures may only modify synthetic integration-test users.");
+    }
+    await connection.execute(
+      "INSERT INTO workspace_members (workspaceId, userId, role) VALUES (?, ?, 'member')",
+      [workspaceId, userId],
+    );
+  } finally {
+    await connection.end();
+  }
+  return async () => {
+    const cleanup = await createConnection(databaseUrl);
+    try {
+      await cleanup.execute(
+        "DELETE FROM workspace_members WHERE workspaceId = ? AND userId = ? AND role = 'member'",
+        [workspaceId, userId],
+      );
+    } finally {
+      await cleanup.end();
+    }
+  };
 }
 
 export function websiteAnchor(url = websiteURL()): WebsiteAnchor {

@@ -1,6 +1,6 @@
 # Testing Repère
 
-Tests exercise real MySQL persistence, SMTP delivery through Mailpit, HTTP-only sessions and native website previews. They create unique identities and projects; they do not bypass OTP, mock API responses, seed production content or delete existing projects. Use a development database because test projects remain available for inspection.
+Tests exercise real MySQL persistence, SMTP delivery through Mailpit, HTTP-only sessions and native website previews. They create unique identities and projects; the complete user journeys do not bypass OTP, seed production content or delete existing projects. Focused onboarding and connection-failure regressions use controlled responses. Use a development database because test projects remain available for inspection.
 
 ## Complete local stack
 
@@ -13,6 +13,7 @@ npx playwright install chromium firefox
 npm run lint
 npm run typecheck
 npm test
+npm run test:migrations
 npm run test:e2e
 ```
 
@@ -52,11 +53,11 @@ The local app uses `PROXY_INTERNAL_URL=http://127.0.0.1:3001`. For tests against
 ## Coverage and limits
 
 - Unit and transport tests cover validation, session boundaries, URL rewriting and actual HTTP proxy behavior with local fixtures.
-- API integration covers SMTP OTP delivery, wrong and reused codes, concurrent verification, attempt lockout, session revocation, CSRF, shared-link authentication, owner permissions, named reviewers, replies, resolution, token rotation, archive behavior, concurrent numbering and counters, PDF delivery and invalid input.
+- API integration covers SMTP OTP delivery, wrong and reused codes, concurrent verification, attempt lockout, session revocation, CSRF, shared-link authentication, workspace permissions, named reviewers, replies, resolution, token rotation, archive behavior, concurrent numbering and counters, PDF delivery and invalid input.
 - Native preview API checks cover per-session origins, canonical target URLs and rejection of metadata/private destinations.
 - UI tests execute the website's own DOM directly in Chromium and Firefox: links, React hydration, counter, form submission, tabs/history, precise anchors, sharing, replies and status changes. They inspect actual requests for application-cookie isolation, verify blocked parent DOM access, and test JavaScript and HTTP-only site cookies across independent reviewers.
 - Native iframe tests reject forged malformed or unrelated-page messages, restore numbered points after a same-page reload, and check a 390-pixel mobile viewport.
-- PDF UI tests cover two-page rendering, page-specific points, zoom and persistence after reload. An original CCITT scanned PDF fixture checks that the decoder loads successfully and the canvas contains the expected black and white pixels. Archive regressions check that owners can still read feedback and PDFs, while archived websites do not start new preview sessions.
+- PDF UI tests cover two-page rendering, page-specific points, zoom and persistence after reload. An original CCITT scanned PDF fixture checks that the decoder loads successfully and the canvas contains the expected black and white pixels. Archive regressions check that workspace members can still read feedback and PDFs, while archived websites do not start new preview sessions.
 - Locale checks cover English UI, French browser negotiation, a persistent language choice, translated OTP emails and stable API error codes. Switching a review to English must preserve the current page, preview session and unsent comment.
 
 The established browser flows use an explicit `fr-FR` locale; the language test also opens an independent `en-US` context. Screenshots and traces go only to `test-results/` and `playwright-report/`, which are ignored by Git. Test runs do not overwrite the curated README images in `docs/images/`.
@@ -75,3 +76,9 @@ docker compose -f compose.yaml -f compose.dev.yaml down
 ```
 
 Remove volumes only when deliberately resetting a disposable test installation. CI creates a fresh Docker environment and removes its own test volumes on completion.
+
+## Workspace migrations
+
+`npm run test:migrations` starts its own MySQL 8.4 container with a random password and loopback-only port. It does not read `.env` or `DATABASE_URL`. It seeds the 0.1.1 schema with two project owners, an invited reviewer, website feedback, replies, attachment metadata, an archived PDF and a session, then applies the current Drizzle migrations. Assertions compare retained records and links, check workspace membership, resume an interrupted backfill, repeat migrations, and verify a fresh installation. The command removes only its own disposable container and volumes when finished.
+
+Workspace API tests verify membership-based management, project isolation, transfers and guest sharing. Their member fixture connects only to the development MySQL database; no membership mutation endpoint is exposed to clients. Browser tests cover creation, switching, navigation history, remembered selection, keyboard and narrow-screen use.

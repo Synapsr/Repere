@@ -5,6 +5,7 @@ import {
   json,
   mysqlEnum,
   mysqlTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -66,13 +67,40 @@ export const rateLimits = mysqlTable(
   (t) => [index("rate_limits_expiry_idx").on(t.expiresAt)],
 );
 
+export const workspaces = mysqlTable("workspaces", {
+  id: id().primaryKey(),
+  name: varchar({ length: 80 }).notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const workspaceMembers = mysqlTable(
+  "workspace_members",
+  {
+    workspaceId: id()
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: id()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: mysqlEnum(["owner", "member"]).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.workspaceId, t.userId] }),
+    index("workspace_members_user_idx").on(t.userId),
+  ],
+);
+
 export const projects = mysqlTable(
   "projects",
   {
     id: id().primaryKey(),
-    ownerId: id()
+    workspaceId: id()
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    // Audit only: permissions always come from workspace membership.
+    createdBy: id().references(() => users.id, { onDelete: "set null" }),
     name: varchar({ length: 160 }).notNull(),
     description: text(),
     type: mysqlEnum(["website", "pdf"]).notNull(),
@@ -90,7 +118,7 @@ export const projects = mysqlTable(
   },
   (t) => [
     uniqueIndex("projects_share_token_unique").on(t.shareToken),
-    index("projects_owner_idx").on(t.ownerId),
+    index("projects_workspace_idx").on(t.workspaceId),
   ],
 );
 

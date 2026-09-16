@@ -79,5 +79,10 @@
   "onboardingResumeTitle": "Back to browsing",
   "onboardingResume": "Switch back to Browse to continue exploring the site.",
   "onboardingStart": "Let’s go",
-  "onboardingReplay": "Replay tutorial"
+  "onboardingReplay": "Replay tutorial",
+  "workspaceLoadError": "Could not load your workspaces.",
+  "moveTitle": "Move to another workspace",
+  "moveDescription": "The sharing link and all comments will stay the same.",
+  "destinationWorkspace": "Destination workspace",
+  "moveProject": "Move project"
 }

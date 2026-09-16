@@ -8,6 +8,13 @@
       "when": 1789481606883,
       "tag": "0000_serious_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1789546234590,
+      "tag": "0001_workspaces",
+      "breakpoints": true
     }
   ]
 }

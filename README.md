@@ -45,12 +45,13 @@ Repère is an independent, open-source alternative for the visual feedback use c
 
 |                         | What you can do                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Workspaces**          | Create spaces, switch between them and move projects while keeping feedback and shared links.                       |
 | **Websites and PDFs**   | Add a URL or upload a private PDF up to 20 MiB. Search and filter your projects.                                    |
 | **One shared link**     | Invite reviewers who verify their email with a one-time code. No password to create.                                |
 | **Precise feedback**    | Attach a point to a website element and page, or to a position on a PDF page.                                       |
 | **Natural navigation**  | Browse, select text, follow links and use the site's controls. Switch to commenting when you want to place a point. |
 | **Clear conversations** | Reply, resolve, reopen and filter feedback. Authors stay attached to their comments.                                |
-| **Project controls**    | Rename, archive, restore and renew a sharing link. Archived conversations remain readable by the owner.             |
+| **Project controls**    | Rename, archive, restore and renew a sharing link. Archived conversations remain readable by workspace members.     |
 | **English and French**  | Choose a language, or start with your browser's preference. Share the same project URL in either language.          |
 | **Your infrastructure** | Run Next.js, MySQL and the preview service with Docker. Store PDFs in a private volume.                             |
 
@@ -201,7 +202,7 @@ The current focus is a complete, understandable point-and-comment workflow. Plan
 - **Audio feedback:** recording, playback and optional Whisper transcription. The schema reserves attachment metadata, duration, transcription status and provider.
 - **Text suggestions:** select a passage, propose a replacement and preview the change in the page. Original and suggested text have reserved fields.
 - Comment notifications, exports, account deletion and retention controls.
-- Organizations, team roles and invitations.
+- Workspace invitations, member management and finer team roles.
 - PDF text selection, document versions and additional attachments.
 - More compatibility fixtures, S3 storage and distributed preview sessions.
 
