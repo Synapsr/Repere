@@ -1,8 +1,14 @@
 # Changelog
 
-This file records user-visible changes. Container version `0.4.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
+This file records user-visible changes. Historical image digests refer to their publication date; `latest` follows the newest release. Container version `0.5.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
 ## 0.5.0 — 2026-09-16
+
+Published from [`cae2e6d`](https://github.com/Synapsr/Repere/commit/cae2e6dd68654a139f3da0c651b71a0837ab8f49). Tags `0.5.0`, `0.5` and `latest` identify this AMD64/ARM64 index:
+
+```text
+sha256:843c1c563c7a50d2b507251aeb173000ec38a104a4c3054e9d03fce94959536f
+```
 
 - Workspace members can copy all open feedback as an AI prompt, or copy one open comment from its header. Review-link guests do not see these actions.
 - Prompts include page URLs, selectors, point coordinates, PDF page numbers and discussion replies in English or French. Resolved feedback is excluded using current server data.

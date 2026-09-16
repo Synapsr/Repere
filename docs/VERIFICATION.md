@@ -2,6 +2,32 @@
 
 This page records observed checks, not compatibility promises. Test instructions are in [TESTING.md](TESTING.md).
 
+## Feedback prompts 0.5.0 — 16 September 2026
+
+Source revision [`cae2e6d`](https://github.com/Synapsr/Repere/commit/cae2e6dd68654a139f3da0c651b71a0837ab8f49) passed [CI run 35095208446](https://github.com/Synapsr/Repere/actions/runs/35095208446). Local checks and final CI cover:
+
+- **169 unit and HTTP tests** pass. TypeScript, ESLint, formatting and dependency audit pass (zero reported vulnerabilities).
+- **48 integration scenarios** pass: 12 API, 18 Chromium and 18 Firefox. The two opt-in HTTPS checks are skipped.
+- Prompts preserve website URLs, selectors, point coordinates, PDF page numbers, comment text and replies in English or French. Account email fields, sharing tokens, file-storage keys and screenshot bytes are not added.
+- API checks deny anonymous and share-link guest exports, follow current open/resolved state, and enforce workspace membership after project moves and member removal. Query validation, unrelated comment IDs, empty selections and archived manager access are covered.
+- Both browsers exercise single/bulk copy, resolved filters, stale review data, guest visibility and automatic removal of controls after workspace access is revoked. The OS clipboard is stubbed to preserve the user's clipboard; the selected-text fallback is checked for focus and full selection.
+- Mobile placement of the copy controls was visually inspected. Tests use synthetic accounts and local Mailpit; no production test email was sent.
+- Existing migrations and the four invitation concurrency scenarios continue to pass. This release adds no database migration, dependency or environment variable.
+
+### Docker publication and application deployment
+
+Tags `synapsr/repere:0.5.0`, `0.5` and `latest` identify this verified public AMD64/ARM64 index:
+
+```text
+sha256:843c1c563c7a50d2b507251aeb173000ec38a104a4c3054e9d03fce94959536f
+```
+
+Both architectures started with integrated MySQL (13 tables, 4 migrations), exercised single/bulk prompt exports through the authenticated packaged API, and rejected anonymous exports. Existing workspace, invitation and private JPEG checks pass. Restarting preserves feedback, prompt output access and identical stored screenshot bytes. AMD64 ran under Docker Desktop emulation on an ARM64 host; these are functionality checks, not performance benchmarks.
+
+The public runtime manifests and configurations match the tested images. Anonymous registry reads confirm both platforms, source/version labels, SLSA provenance, SPDX SBOMs and preservation of the 0.1–0.4 tags. Native image-library license inventories remain present.
+
+The production app was deployed from the same revision after a successful MySQL backup. Startup completed, health returned 200, and unauthenticated prompt access returned 401. The preview service is unchanged. These checks do not claim a production restore or a new authenticated production browser session.
+
 ## Point screenshots 0.4.0 — 16 September 2026
 
 Source revision [`819b8b0`](https://github.com/Synapsr/Repere/commit/819b8b04a4e753d558e6e858c7b7deb780aa79a8) passed [CI run 35085906735](https://github.com/Synapsr/Repere/actions/runs/35085906735). Local checks and final CI cover:
@@ -126,7 +152,7 @@ A production email-send test was accepted by the configured SMTP service; **rece
 
 Version **`0.1.0` was published** to [Docker Hub](https://hub.docker.com/r/synapsr/repere) from the frozen source revision [`ef36f020b83851bc1430e83f901c7286e0cae7df`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). Changes made to `main` after that revision are not part of this image.
 
-At the first publication, tags **`0.1.0`**, **`0.1`** and **`latest`** returned this public multi-platform index. The immutable `0.1.0` tag still retains it; `0.1` now identifies 0.1.1 and `latest` identifies 0.3.0:
+At the first publication, tags **`0.1.0`**, **`0.1`** and **`latest`** returned this public multi-platform index. The immutable `0.1.0` tag still retains it; `0.1` now identifies 0.1.1 and `latest` follows the newest release:
 
 ```text
 sha256:860000ef8c3ce45f40aff05aacf33935eec7fc4bf4cae1fb83152e83558221fa
