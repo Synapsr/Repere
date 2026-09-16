@@ -2,6 +2,15 @@
 
 This file records user-visible changes. Container version `0.4.0` is available on [Docker Hub](https://hub.docker.com/r/synapsr/repere).
 
+## 0.5.0 — 2026-09-16
+
+- Workspace members can copy all open feedback as an AI prompt, or copy one open comment from its header. Review-link guests do not see these actions.
+- Prompts include page URLs, selectors, point coordinates, PDF page numbers and discussion replies in English or French. Resolved feedback is excluded using current server data.
+- Export access is checked against current workspace membership, including after project moves or member removal. Copying does not resolve comments or send them to an AI service.
+- A selected-text dialog provides a fallback when browser clipboard access is unavailable. Account email fields, review tokens and screenshot bytes are not added to prompts.
+
+**Upgrade:** deploy the updated app. No database migration, new environment variable or preview-service change is required.
+
 ## 0.4.0 — 2026-09-16
 
 Published from [`819b8b0`](https://github.com/Synapsr/Repere/commit/819b8b04a4e753d558e6e858c7b7deb780aa79a8). Tags `0.4.0`, `0.4` and `latest` identify this AMD64/ARM64 index:

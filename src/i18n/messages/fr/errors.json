@@ -60,5 +60,6 @@
   "CAPTURE_INVALID": "La capture est invalide. Veuillez la refaire.",
   "CAPTURE_TOO_LARGE": "La capture ne doit pas dépasser 2 Mo.",
   "CAPTURE_DIMENSIONS_INVALID": "La capture ne doit pas dépasser 4 096 pixels par côté et 8 millions de pixels au total.",
-  "SCREENSHOT_NOT_FOUND": "Capture introuvable."
+  "SCREENSHOT_NOT_FOUND": "Capture introuvable.",
+  "PROMPT_EMPTY": "Il n’y a plus de retour à traiter."
 }

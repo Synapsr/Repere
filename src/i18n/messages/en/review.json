@@ -87,5 +87,11 @@
   "moveProject": "Move project",
   "captureTitle": "Point screenshot",
   "captureView": "View screenshot",
-  "captureUnavailable": "This screenshot is unavailable."
+  "captureUnavailable": "This screenshot is unavailable.",
+  "copyOpenPrompt": "Copy open feedback as a prompt",
+  "copyCommentPrompt": "Copy this feedback as a prompt",
+  "promptCopied": "Prompt copied",
+  "promptFailed": "Could not prepare the prompt.",
+  "promptTitle": "Copy prompt",
+  "promptManual": "Automatic copying is unavailable. The text is selected: press ⌘C or Ctrl+C to copy it."
 }

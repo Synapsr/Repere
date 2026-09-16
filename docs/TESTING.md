@@ -109,3 +109,14 @@ and the icon-triggered expanded view. Drafts contain no image or capture status;
 rendered page is captured. Capture helper tests cover immediate cloning, timeouts and
 abandoned work. These fixtures do not establish pixel-perfect support for all external
 websites, cross-origin media or CSS effects.
+
+## Feedback prompts
+
+Prompt tests cover website and PDF context, replies, English/French output and
+exclusion of account email fields and share tokens. API checks use real MySQL
+membership, status changes, project transfers and member removal. Browser tests
+verify single/bulk copy, guest visibility, resolved filters, stale-list export,
+revoked membership and selected-text fallback. Only the operating-system clipboard
+is stubbed, so tests do not replace the user's actual clipboard. Email uses local
+Mailpit and synthetic identities, with two additional OTPs for API and four for the
+combined Chromium/Firefox group (21 and 24 sends per complete isolated suite).

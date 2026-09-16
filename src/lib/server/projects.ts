@@ -3,6 +3,8 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { database, type Transaction } from "@/db";
 import { commentScreenshots, comments, projects, replies, users } from "@/db/schema";
 import type { Anchor, CaptureInput, Feedback, Project, Reply, User } from "../../../shared/types";
+import type { Locale } from "../../../shared/locale";
+import { feedbackPrompt } from "../feedback-prompt";
 import { ApiError } from "./errors";
 import { appOrigin, ownerEmailAllowed, randomToken } from "./security";
 import { parsePdfUpload, removePdf, storePdf } from "./uploads";
@@ -159,8 +161,13 @@ export async function updateProject(
 }
 
 const authorFields = { id: users.id, email: users.email, name: users.name };
-export async function projectComments(projectId: string, commentId?: string): Promise<Feedback[]> {
-  const rows = await database()
+export async function projectComments(
+  projectId: string,
+  commentId?: string,
+  options: { reader?: Pick<Transaction, "select">; onlyOpen?: boolean } = {},
+): Promise<Feedback[]> {
+  const reader = options.reader ?? database();
+  const rows = await reader
     .select({
       comment: comments,
       author: authorFields,
@@ -176,11 +183,15 @@ export async function projectComments(projectId: string, commentId?: string): Pr
     .innerJoin(users, eq(comments.authorId, users.id))
     .leftJoin(commentScreenshots, eq(commentScreenshots.commentId, comments.id))
     .where(
-      and(eq(comments.projectId, projectId), commentId ? eq(comments.id, commentId) : undefined),
+      and(
+        eq(comments.projectId, projectId),
+        commentId ? eq(comments.id, commentId) : undefined,
+        options.onlyOpen ? eq(comments.status, "open") : undefined,
+      ),
     )
     .orderBy(asc(comments.number));
   if (rows.length === 0) return [];
-  const responseRows = await database()
+  const responseRows = await reader
     .select({ reply: replies, author: authorFields })
     .from(replies)
     .innerJoin(users, eq(replies.authorId, users.id))
@@ -218,6 +229,25 @@ export async function projectComments(projectId: string, commentId?: string): Pr
     createdAt: comment.createdAt.toISOString(),
     updatedAt: comment.updatedAt.toISOString(),
   }));
+}
+
+/** Export follows workspace management rights, never review-link guest access. */
+export async function getProjectPrompt(id: string, user: User, locale: Locale, commentId?: string) {
+  return database().transaction(async (tx) => {
+    // Keep the project and membership stable while reading feedback. Project moves
+    // and member removal cannot switch the authorization scope halfway through.
+    const [project] = await tx.select().from(projects).where(eq(projects.id, id)).for("share");
+    if (!project || !(await workspaceMembership(project.workspaceId, user.id, tx, "share")))
+      throw new ApiError(404, "PROJECT_NOT_FOUND");
+    const feedback = await projectComments(id, commentId, { reader: tx, onlyOpen: !commentId });
+    if (commentId && !feedback.length) throw new ApiError(404, "COMMENT_NOT_FOUND");
+    if (!feedback.length || feedback.some((comment) => comment.status !== "open"))
+      throw new ApiError(409, "PROMPT_EMPTY");
+    return {
+      prompt: feedbackPrompt(publicProject(project), feedback, locale),
+      count: feedback.length,
+    };
+  });
 }
 
 export async function createComment(

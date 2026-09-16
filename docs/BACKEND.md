@@ -130,3 +130,18 @@ MySQL together. Old comments have no screenshot and remain compatible.
 `GET /api/reviews/:token/comments/:id/screenshot` requires a signed-in user, a current
 review token and a comment in that project. Archived projects remain available to workspace
 members only. Responses are private, uncached JPEGs; storage paths are never exposed.
+
+## Feedback prompts
+
+`GET /api/projects/:id/prompt` returns `{ prompt, count }` for all currently open
+comments. An optional `commentId` selects a single open comment in that project.
+Resolved or empty selections return `PROMPT_EMPTY` (409); missing or unrelated
+comments return 404. Responses are uncached and follow the locale cookie/browser
+language. Repeated, malformed or unsupported query parameters are rejected.
+
+The endpoint requires current workspace membership, even when a signed-in guest
+can read the shared review. Project and membership rows stay shared-locked while
+the feedback is read, preserving authorization across project moves and removals.
+No comments are changed, no AI provider is called, and no account email fields,
+share tokens, file-storage keys or image bytes are added to the prompt. The text
+of feedback and replies is preserved, including any details their authors wrote.

@@ -34,6 +34,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { Logo, Avatar, Modal, Spinner, ErrorBanner } from "./ui";
 import { AuthForm } from "./auth";
 import { WebsiteViewer } from "./website-viewer";
+import { CopyPromptButton } from "./copy-prompt-button";
 import { CommentCapture } from "./comment-capture";
 import { ReviewOnboarding } from "./review-onboarding";
 import "./review.css";
@@ -465,13 +466,18 @@ export function Review({ token }: { token: string }) {
               {t("feedback")}
               <span>{data.comments.length}</span>
             </h2>
-            <button
-              className="icon-button review-mobile-comments"
-              aria-label={t("hideFeedback")}
-              onClick={() => setShowSidebar(false)}
-            >
-              <X size={17} />
-            </button>
+            <div className="feedback-heading-actions">
+              {data.canManage && openCount > 0 && filter !== "resolved" && (
+                <CopyPromptButton projectId={project.id} onError={setError} />
+              )}
+              <button
+                className="icon-button review-mobile-comments"
+                aria-label={t("hideFeedback")}
+                onClick={() => setShowSidebar(false)}
+              >
+                <X size={17} />
+              </button>
+            </div>
           </div>
           <div className="feedback-filters">
             <button
@@ -559,6 +565,8 @@ export function Review({ token }: { token: string }) {
                     canResolve={
                       !readOnly && (data.canManage || data.user?.id === comment.author.id)
                     }
+                    canCopyPrompt={data.canManage && comment.status === "open"}
+                    onPromptError={setError}
                     readOnly={readOnly}
                     token={token}
                     onReply={refresh}
@@ -644,6 +652,8 @@ function FeedbackCard({
   onSelect,
   onStatus,
   canResolve,
+  canCopyPrompt,
+  onPromptError,
   readOnly,
   token,
   onReply,
@@ -653,6 +663,8 @@ function FeedbackCard({
   onSelect: () => void;
   onStatus: () => void;
   canResolve: boolean;
+  canCopyPrompt: boolean;
+  onPromptError: (message: string) => void;
   readOnly: boolean;
   token: string;
   onReply: () => Promise<unknown>;
@@ -695,6 +707,13 @@ function FeedbackCard({
           <ArrowUpRight size={13} />
         </button>
         <div className="feedback-card-actions">
+          {canCopyPrompt && (
+            <CopyPromptButton
+              projectId={comment.projectId}
+              commentId={comment.id}
+              onError={onPromptError}
+            />
+          )}
           {comment.screenshot && (
             <CommentCapture
               src={`/api/reviews/${token}/comments/${comment.id}/screenshot`}
@@ -702,7 +721,7 @@ function FeedbackCard({
               pointY={comment.screenshot.pointY}
               number={comment.number}
             />
-          )}{" "}
+          )}
           {canResolve && (
             <button
               className={`resolve-button ${comment.status === "resolved" ? "resolved" : ""}`}

@@ -60,5 +60,6 @@
   "CAPTURE_INVALID": "The screenshot is invalid. Please capture it again.",
   "CAPTURE_TOO_LARGE": "The screenshot must be no larger than 2 MB.",
   "CAPTURE_DIMENSIONS_INVALID": "The screenshot must fit within 4,096 pixels per side and 8 million pixels in total.",
-  "SCREENSHOT_NOT_FOUND": "Screenshot not found."
+  "SCREENSHOT_NOT_FOUND": "Screenshot not found.",
+  "PROMPT_EMPTY": "There is no feedback left to address."
 }

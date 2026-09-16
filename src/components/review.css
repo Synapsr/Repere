@@ -598,6 +598,23 @@
   align-items: center;
   gap: 2px;
 }
+.feedback-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.copy-prompt-button {
+  width: 28px;
+  height: 28px;
+  color: var(--muted);
+}
+.prompt-text {
+  width: 100%;
+  min-height: 240px;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+}
 .capture-button {
   width: 28px;
   height: 28px;

@@ -87,5 +87,11 @@
   "moveProject": "Déplacer le projet",
   "captureTitle": "Capture du point",
   "captureView": "Voir la capture",
-  "captureUnavailable": "Cette capture n’est pas disponible."
+  "captureUnavailable": "Cette capture n’est pas disponible.",
+  "copyOpenPrompt": "Copier les retours à traiter en prompt",
+  "copyCommentPrompt": "Copier ce retour en prompt",
+  "promptCopied": "Prompt copié",
+  "promptFailed": "Impossible de préparer le prompt.",
+  "promptTitle": "Copier le prompt",
+  "promptManual": "La copie automatique est indisponible. Le texte est sélectionné : utilisez ⌘C ou Ctrl+C pour le copier."
 }
