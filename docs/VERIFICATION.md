@@ -4,18 +4,36 @@ This page records observed checks, not compatibility promises. Test instructions
 
 ## Workspace invitations 0.3.0 — 16 September 2026
 
-Local verification before publication:
+Source revision [`f655468`](https://github.com/Synapsr/Repere/commit/f655468e73e61b6049345f97a91e1d3f54e1868b) passed [CI run 35080406117](https://github.com/Synapsr/Repere/actions/runs/35080406117). Local checks and final CI cover:
 
 - **148 unit and HTTP tests** pass; ESLint, TypeScript, formatting and dependency audit pass (zero reported vulnerabilities).
-- **38 complete integration scenarios** pass on their first attempt: 10 API, 14 Chromium and 14 Firefox. The two optional HTTPS checks are skipped in this local run.
-- **Four additional browser scenarios** pass for automatic member-list refresh and stale-response handling, with controlled responses and no OTP requests.
+- **42 integration scenarios** pass in final CI: 10 API, 16 Chromium and 16 Firefox. The two optional HTTPS checks are skipped.
+- Four of the browser scenarios exercise automatic member-list refresh and stale-response handling with controlled responses and no OTP requests. The other 38 scenarios also passed locally on their first attempt.
 - Real invitation email delivery through local Mailpit, email-code login, explicit acceptance, workspace project access, removal, and rejection of a previously accepted link pass in both browsers. All recipients are synthetic test identities.
 - API checks cover matching-email enforcement, token hashing, owner permissions, resend, cancellation, expiry, idempotency and continued guest participation through existing shared review links.
 - **Four MySQL concurrency scenarios** pass on a separate disposable database: first delivery failure, resend failure preserving the previous token, cancellation during email delivery, and acceptance/removal while a resend is pending. SMTP alone is controlled in these tests; database transactions are real.
 - Fresh installation, interrupted migration and upgrades from the 0.1.1 and 0.2.0 schemas pass without losing existing projects, memberships, feedback, sharing links or sessions.
 - Visual checks at 320, 390 and 1440 pixels cover owner/member views, invitation acceptance, wrong-account and unavailable/error states in Chromium and Firefox.
 
-API and browser integration run against independent local MySQL/Mailpit stacks, using 17 and 18 OTP sends respectively. Authentication quotas remain unchanged. Hosted CI and publication results are recorded after completion.
+API and browser integration run against independent local MySQL/Mailpit stacks, using 17 and 18 OTP sends respectively. Authentication quotas remain unchanged. CI uses the same separation, with all three jobs successful.
+
+### Docker publication
+
+Tags `synapsr/repere:0.3.0`, `0.3` and `latest` were published from the frozen `f655468` source revision and verified through anonymous registry reads:
+
+```text
+sha256:073725dcd8d0e65003c11b3745604b2b3eb6f9d17f63c0c551200525606bc51c
+```
+
+- Both Linux AMD64 and ARM64 variants passed startup with integrated MySQL, **12 tables including the migration journal**, and three applied migrations.
+- Health checks, service identities, private file permissions, workspace isolation, project moves, invitation acceptance/removal and rejected reuse of an accepted link passed. These packaging fixtures use synthetic database sessions; the separate integration journeys exercise real OTP delivery to Mailpit.
+- Restart and persistence checks passed on both architectures. AMD64 was tested through Docker Desktop emulation on an ARM64 host; this is a functionality check, not a performance benchmark.
+- Published runtime manifests and configurations exactly match the smoke-tested images. Both include SPDX SBOMs and SLSA provenance, with the expected version and revision labels.
+- Anonymous reads confirmed the new tags and unchanged digests for `0.1`, `0.1.0`, `0.1.1`, `0.2` and `0.2.0`. Only disposable smoke containers and their own volumes were removed.
+
+### Production deployment
+
+The application was deployed from `f655468` after a fresh successful MySQL backup. EasyPanel reports a completed deployment, startup logs confirm migrations completed and Next.js ready, and the public health endpoint returns 200. The members endpoint requires authentication (401), and an invalid invitation returns 404. The existing signed-in production session loaded its workspace and retained its projects. SMTP, environment variables, preview routing and TLS settings were preserved. Invitation email journeys were tested with local Mailpit; no invitation was sent to a real production recipient as part of this verification.
 
 ## Workspaces 0.2.0 — 16 September 2026
 
@@ -79,7 +97,7 @@ A production email-send test was accepted by the configured SMTP service; **rece
 
 Version **`0.1.0` was published** to [Docker Hub](https://hub.docker.com/r/synapsr/repere) from the frozen source revision [`ef36f020b83851bc1430e83f901c7286e0cae7df`](https://github.com/Synapsr/Repere/commit/ef36f020b83851bc1430e83f901c7286e0cae7df). Changes made to `main` after that revision are not part of this image.
 
-At the first publication, tags **`0.1.0`**, **`0.1`** and **`latest`** returned this public multi-platform index. The immutable `0.1.0` tag still retains it; `0.1` now identifies 0.1.1 and `latest` identifies 0.2.0:
+At the first publication, tags **`0.1.0`**, **`0.1`** and **`latest`** returned this public multi-platform index. The immutable `0.1.0` tag still retains it; `0.1` now identifies 0.1.1 and `latest` identifies 0.3.0:
 
 ```text
 sha256:860000ef8c3ce45f40aff05aacf33935eec7fc4bf4cae1fb83152e83558221fa

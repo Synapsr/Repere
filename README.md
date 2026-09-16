@@ -64,7 +64,7 @@ There are no plan tiers or per-reviewer charges in the code. Hosting and email d
 
 The `synapsr/repere` image runs the application, native preview service and **MySQL 8.4 in one container**. It generates and retains its secrets, initializes the database and applies migrations automatically. Docker is the only local runtime requirement.
 
-**[Version 0.2.0 is available on Docker Hub](https://hub.docker.com/r/synapsr/repere)** for Linux AMD64 and ARM64. Both variants were started with integrated MySQL and their public manifests were checked anonymously after publication; see the [verification record](docs/VERIFICATION.md#workspaces-020--16-september-2026).
+**[Version 0.3.0 is available on Docker Hub](https://hub.docker.com/r/synapsr/repere)** for Linux AMD64 and ARM64. Both variants were started with integrated MySQL and their public manifests were checked anonymously after publication; see the [verification record](docs/VERIFICATION.md#workspace-invitations-030--16-september-2026).
 
 Create `.env.docker` with your SMTP provider's settings; sign-in codes require working email delivery:
 
@@ -84,7 +84,7 @@ docker run -d --name repere --restart unless-stopped \
   -p 8080:8080 --stop-timeout 40 \
   -v repere-data:/data \
   --env-file .env.docker \
-  synapsr/repere:0.2.0
+  synapsr/repere:0.3.0
 ```
 
 Open [localhost:8080](http://localhost:8080). Keep `/data` mounted: it contains the database, PDFs and generated secrets. Pin a published version or digest for repeatable deployments. An [external MySQL database](docs/DOCKER.md#external-mysql) is optional.
