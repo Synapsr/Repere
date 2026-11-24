@@ -47,14 +47,6 @@ export function upstreamHeaders(
 ): OutgoingHttpHeaders {
   const result = stripHopHeaders(headers);
   result.host = target.host;
-  if (!decompressZstd) {
-    // Older supported Node versions cannot decode Zstandard for HTML and CSS rewriting.
-    const encodings = String(result["accept-encoding"] ?? "identity")
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter((entry) => entry && !/^zstd\s*(?:;|$)/i.test(entry));
-    result["accept-encoding"] = [...encodings, "zstd;q=0"].join(", ");
-  }
   for (const name of Object.keys(result)) {
     if (name === "forwarded" || name.startsWith("x-forwarded-") || name.startsWith("x-repere-"))
       delete result[name];
@@ -94,6 +86,16 @@ export async function openUpstream(
     options.allowedPrivateHosts,
     options.resolver,
   );
+  const headers: OutgoingHttpHeaders = { ...options.headers, host: target.host };
+  const acceptedEncodings = String(headers["accept-encoding"] ?? "*");
+  if (!decompressZstd && /(?:^|,)\s*(?:zstd|\*)\s*(?:;|,|$)/i.test(acceptedEncodings)) {
+    // Explicitly exclude Zstandard even when a client accepts it through a wildcard.
+    const encodings = acceptedEncodings
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry && !/^zstd\s*(?:;|$)/i.test(entry));
+    headers["accept-encoding"] = [...encodings, "zstd;q=0"].join(", ");
+  }
   return new Promise((resolve, reject) => {
     const request = (target.protocol === "https:" ? https : http).request(
       {
@@ -103,7 +105,7 @@ export async function openUpstream(
         servername: target.hostname.replace(/^\[|\]$/g, ""),
         method: options.method ?? "GET",
         path: `${target.pathname}${target.search}`,
-        headers: { ...options.headers, host: target.host },
+        headers,
         agent: false,
       },
       (response) => {

@@ -95,7 +95,10 @@ describe("real native preview HTTP transport", () => {
       }
       if (req.url === "/script.js") {
         res.setHeader("content-type", "text/javascript");
-        res.end(script);
+        if (req.headers["accept-encoding"]?.includes(encoding)) {
+          res.setHeader("content-encoding", encoding);
+          res.end(compress(script));
+        } else res.end(script);
         return;
       }
       if (req.url === "/style.css") {
@@ -145,6 +148,11 @@ describe("real native preview HTTP transport", () => {
           "content-encoding": encoding,
         });
         res.end(compress("<h1>Héllo compressed</h1>"));
+        return;
+      }
+      if (req.url === "/truncated") {
+        res.writeHead(200, { "content-type": "text/html", "content-encoding": encoding });
+        res.end(compress("<h1>Truncated</h1>").subarray(0, -1));
         return;
       }
       if (req.url === "/large") {
@@ -359,7 +367,7 @@ describe("real native preview HTTP transport", () => {
       const options = {
         host: new URL(session.origin).host,
         headers: {
-          "accept-encoding": hasZstd ? encoding : "gzip, deflate, br, zstd",
+          "accept-encoding": hasZstd ? encoding : "gzip, deflate, br, ZSTD;q=0.8, *;q=0.5",
         },
       };
       const html = await request(fixture.proxyPort, "/compressed", options);
@@ -368,7 +376,7 @@ describe("real native preview HTTP transport", () => {
       expect(html.body.toString()).toContain("Héllo compressed");
       expect(html.body.toString()).toContain("repere-preview-config");
       expect(fixture.compressedPageHeaders[0]?.["accept-encoding"]).toBe(
-        hasZstd ? encoding : "gzip, deflate, br, zstd;q=0",
+        hasZstd ? encoding : "gzip, deflate, br, *;q=0.5, zstd;q=0",
       );
       const css = await request(fixture.proxyPort, "/style.css", options);
       expect(css.status).toBe(200);
@@ -376,6 +384,13 @@ describe("real native preview HTTP transport", () => {
       expect(css.body.toString()).toContain(`url('${session.origin}/font.woff2')`);
       const oversized = await request(fixture.proxyPort, "/large", options);
       expect(oversized.status).toBe(502);
+      const truncated = await request(fixture.proxyPort, "/truncated", options);
+      expect(truncated.status).toBe(502);
+      const script = await request(fixture.proxyPort, "/script.js", options);
+      const compress = encoding === "zstd" ? zlib.zstdCompressSync : zlib.gzipSync;
+      expect(script.status).toBe(200);
+      expect(script.headers["content-encoding"]).toBe(encoding);
+      expect(script.body.equals(compress(fixture.script))).toBe(true);
     },
   );
 
