@@ -6,12 +6,14 @@ import http, {
 import https from "node:https";
 import { promisify } from "node:util";
 import type { Duplex } from "node:stream";
-import { brotliDecompress, gunzip, inflate } from "node:zlib";
+import zlib from "node:zlib";
 import { resolveDestination, type Resolver } from "./network";
 
-const decompressGzip = promisify(gunzip);
-const decompressBrotli = promisify(brotliDecompress);
-const decompressDeflate = promisify(inflate);
+const decompressGzip = promisify(zlib.gunzip);
+const decompressBrotli = promisify(zlib.brotliDecompress);
+const decompressDeflate = promisify(zlib.inflate);
+const decompressZstd =
+  typeof zlib.zstdDecompress === "function" ? promisify(zlib.zstdDecompress) : undefined;
 const hopHeaders = new Set([
   "connection",
   "keep-alive",
@@ -45,6 +47,14 @@ export function upstreamHeaders(
 ): OutgoingHttpHeaders {
   const result = stripHopHeaders(headers);
   result.host = target.host;
+  if (!decompressZstd) {
+    // Older supported Node versions cannot decode Zstandard for HTML and CSS rewriting.
+    const encodings = String(result["accept-encoding"] ?? "identity")
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry && !/^zstd\s*(?:;|$)/i.test(entry));
+    result["accept-encoding"] = [...encodings, "zstd;q=0"].join(", ");
+  }
   for (const name of Object.keys(result)) {
     if (name === "forwarded" || name.startsWith("x-forwarded-") || name.startsWith("x-repere-"))
       delete result[name];
@@ -211,6 +221,8 @@ export async function readTextResponse(
     buffer = await decompressBrotli(buffer, { maxOutputLength: maximumBytes });
   else if (encoding === "deflate")
     buffer = await decompressDeflate(buffer, { maxOutputLength: maximumBytes });
+  else if (encoding === "zstd" && decompressZstd)
+    buffer = await decompressZstd(buffer, { maxOutputLength: maximumBytes });
   else if (encoding !== "identity") throw new Error("Unsupported text compression");
   if (buffer.length > maximumBytes) throw new Error("Decoded Text response exceeds the size limit");
   const charset =
