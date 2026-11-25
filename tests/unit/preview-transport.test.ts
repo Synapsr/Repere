@@ -3,8 +3,8 @@ import type { AddressInfo } from "node:net";
 import zlib from "node:zlib";
 import { once } from "node:events";
 import { WebSocket, WebSocketServer } from "ws";
-import { afterEach, describe, expect, it } from "vitest";
-import { createPreviewServer, type PreviewServerOptions } from "../../preview/server";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { PreviewServerOptions } from "../../preview/server";
 import type { PreviewSession } from "../../shared/preview";
 
 const secret = "preview-tests-a-very-long-secret-at-least-32-characters";
@@ -208,6 +208,7 @@ describe("real native preview HTTP transport", () => {
       fixture.closeAllConnections();
       await new Promise<void>((resolve) => fixture.close(() => resolve()));
     });
+    const { createPreviewServer } = await import("../../preview/server");
     const service = await createPreviewServer({
       secret,
       appUrl: appOrigin,
@@ -366,18 +367,14 @@ describe("real native preview HTTP transport", () => {
       const { session } = await fixture.register();
       const options = {
         host: new URL(session.origin).host,
-        headers: {
-          "accept-encoding": hasZstd ? encoding : "gzip, deflate, br, ZSTD;q=0.8, *;q=0.5",
-        },
+        headers: { "accept-encoding": encoding },
       };
       const html = await request(fixture.proxyPort, "/compressed", options);
       expect(html.status).toBe(200);
       expect(html.headers).not.toHaveProperty("content-encoding");
       expect(html.body.toString()).toContain("Héllo compressed");
       expect(html.body.toString()).toContain("repere-preview-config");
-      expect(fixture.compressedPageHeaders[0]?.["accept-encoding"]).toBe(
-        hasZstd ? encoding : "gzip, deflate, br, *;q=0.5, zstd;q=0",
-      );
+      expect(fixture.compressedPageHeaders[0]?.["accept-encoding"]).toBe(encoding);
       const css = await request(fixture.proxyPort, "/style.css", options);
       expect(css.status).toBe(200);
       expect(css.headers).not.toHaveProperty("content-encoding");
@@ -393,6 +390,30 @@ describe("real native preview HTTP transport", () => {
       expect(script.body.equals(compress(fixture.script))).toBe(true);
     },
   );
+
+  it.each([
+    ["*;q=0.5", "*;q=0.5, zstd;q=0"],
+    ["gzip, deflate, br, ZSTD;q=0.8, *;q=0.5", "gzip, deflate, br, *;q=0.5, zstd;q=0"],
+  ])("excludes Zstandard from %s when its decoder is unavailable", async (encoding, expected) => {
+    vi.resetModules();
+    vi.doMock("node:zlib", async (importOriginal) => ({
+      ...(await importOriginal<typeof import("node:zlib")>()),
+      default: { ...zlib, zstdDecompress: undefined },
+    }));
+    try {
+      const fixture = await setup();
+      const { session } = await fixture.register();
+      const response = await request(fixture.proxyPort, "/compressed", {
+        host: new URL(session.origin).host,
+        headers: { "accept-encoding": encoding },
+      });
+      expect(response.status).toBe(200);
+      expect(fixture.compressedPageHeaders[0]?.["accept-encoding"]).toBe(expected);
+    } finally {
+      vi.doUnmock("node:zlib");
+      vi.resetModules();
+    }
+  });
 
   it("does not buffer SSE until completion", async () => {
     const fixture = await setup();
