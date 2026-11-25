@@ -1,14 +1,15 @@
 import http, { type IncomingHttpHeaders, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { gzipSync } from "node:zlib";
+import zlib from "node:zlib";
 import { once } from "node:events";
 import { WebSocket, WebSocketServer } from "ws";
-import { afterEach, describe, expect, it } from "vitest";
-import { createPreviewServer, type PreviewServerOptions } from "../../preview/server";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { PreviewServerOptions } from "../../preview/server";
 import type { PreviewSession } from "../../shared/preview";
 
 const secret = "preview-tests-a-very-long-secret-at-least-32-characters";
 const appOrigin = "http://localhost:3000";
+const hasZstd = typeof zlib.zstdCompressSync === "function";
 type Result = { status: number; headers: IncomingHttpHeaders; body: Buffer };
 async function listen(server: Server) {
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -60,8 +61,18 @@ describe("real native preview HTTP transport", () => {
     let forbiddenRequests = 0;
     let resolverCalls = 0;
     const initialHeaders: IncomingHttpHeaders[] = [];
+    const compressedPageHeaders: IncomingHttpHeaders[] = [];
     const script = `globalThis.example = { original: "https://example.com/api" };`;
     const fixture = http.createServer(async (req, res) => {
+      const acceptsZstd = req.headers["accept-encoding"]
+        ?.split(",")
+        .some((entry) => entry.trim() === "zstd");
+      const encoding = acceptsZstd ? "zstd" : "gzip";
+      const compress = acceptsZstd ? zlib.zstdCompressSync : zlib.gzipSync;
+      if (!compress) {
+        res.writeHead(406).end();
+        return;
+      }
       if (req.url === "/start") {
         initialHeaders.push(req.headers);
         res.writeHead(302, { location: "/page?lang=fr" });
@@ -84,17 +95,20 @@ describe("real native preview HTTP transport", () => {
       }
       if (req.url === "/script.js") {
         res.setHeader("content-type", "text/javascript");
-        res.end(script);
+        if (req.headers["accept-encoding"]?.includes(encoding)) {
+          res.setHeader("content-encoding", encoding);
+          res.end(compress(script));
+        } else res.end(script);
         return;
       }
       if (req.url === "/style.css") {
         res.writeHead(200, {
           "content-type": "text/css",
-          "content-encoding": "gzip",
+          "content-encoding": encoding,
           etag: "original-css",
         });
         res.end(
-          gzipSync(
+          compress(
             `@font-face{src:url('${target}/font.woff2')}body{background:url(https://cdn.example/image.png)}`,
           ),
         );
@@ -127,17 +141,23 @@ describe("real native preview HTTP transport", () => {
         res.end(Buffer.from([4, 5, 6, 7]));
         return;
       }
-      if (req.url === "/gzip") {
+      if (req.url === "/compressed") {
+        compressedPageHeaders.push(req.headers);
         res.writeHead(200, {
           "content-type": "text/html; charset=utf-8",
-          "content-encoding": "gzip",
+          "content-encoding": encoding,
         });
-        res.end(gzipSync("<h1>Héllo compressed</h1>"));
+        res.end(compress("<h1>Héllo compressed</h1>"));
+        return;
+      }
+      if (req.url === "/truncated") {
+        res.writeHead(200, { "content-type": "text/html", "content-encoding": encoding });
+        res.end(compress("<h1>Truncated</h1>").subarray(0, -1));
         return;
       }
       if (req.url === "/large") {
-        res.writeHead(200, { "content-type": "text/html", "content-encoding": "gzip" });
-        res.end(gzipSync("<h1>" + "x".repeat(20_000) + "</h1>"));
+        res.writeHead(200, { "content-type": "text/html", "content-encoding": encoding });
+        res.end(compress("<h1>" + "x".repeat(20_000) + "</h1>"));
         return;
       }
       if (req.url === "/ssrf") {
@@ -188,6 +208,7 @@ describe("real native preview HTTP transport", () => {
       fixture.closeAllConnections();
       await new Promise<void>((resolve) => fixture.close(() => resolve()));
     });
+    const { createPreviewServer } = await import("../../preview/server");
     const service = await createPreviewServer({
       secret,
       appUrl: appOrigin,
@@ -221,6 +242,7 @@ describe("real native preview HTTP transport", () => {
       register,
       script,
       initialHeaders,
+      compressedPageHeaders,
       getResolverCalls: () => resolverCalls,
       getForbiddenRequests: () => forbiddenRequests,
     };
@@ -325,7 +347,7 @@ describe("real native preview HTTP transport", () => {
     expect(JSON.parse(internal.body.toString())).not.toHaveProperty("authorization");
   });
 
-  it("streams binary ranges and decodes bounded compressed HTML", async () => {
+  it("streams binary ranges", async () => {
     const fixture = await setup();
     const { session } = await fixture.register();
     const host = new URL(session.origin).host;
@@ -336,11 +358,61 @@ describe("real native preview HTTP transport", () => {
     expect(range.status).toBe(206);
     expect(range.headers["content-range"]).toBe("bytes 4-7/16");
     expect([...range.body]).toEqual([4, 5, 6, 7]);
-    const html = await request(fixture.proxyPort, "/gzip", { host });
-    expect(html.status).toBe(200);
-    expect(html.headers).not.toHaveProperty("content-encoding");
-    expect(html.body.toString()).toContain("Héllo compressed");
-    expect(html.body.toString()).toContain("repere-preview-config");
+  });
+
+  it.each(hasZstd ? ["gzip", "zstd"] : ["gzip"])(
+    "decodes bounded %s HTML and CSS before rewriting",
+    async (encoding) => {
+      const fixture = await setup({ maxHtmlBytes: 1024 });
+      const { session } = await fixture.register();
+      const options = {
+        host: new URL(session.origin).host,
+        headers: { "accept-encoding": encoding },
+      };
+      const html = await request(fixture.proxyPort, "/compressed", options);
+      expect(html.status).toBe(200);
+      expect(html.headers).not.toHaveProperty("content-encoding");
+      expect(html.body.toString()).toContain("Héllo compressed");
+      expect(html.body.toString()).toContain("repere-preview-config");
+      expect(fixture.compressedPageHeaders[0]?.["accept-encoding"]).toBe(encoding);
+      const css = await request(fixture.proxyPort, "/style.css", options);
+      expect(css.status).toBe(200);
+      expect(css.headers).not.toHaveProperty("content-encoding");
+      expect(css.body.toString()).toContain(`url('${session.origin}/font.woff2')`);
+      const oversized = await request(fixture.proxyPort, "/large", options);
+      expect(oversized.status).toBe(502);
+      const truncated = await request(fixture.proxyPort, "/truncated", options);
+      expect(truncated.status).toBe(502);
+      const script = await request(fixture.proxyPort, "/script.js", options);
+      const compress = encoding === "zstd" ? zlib.zstdCompressSync : zlib.gzipSync;
+      expect(script.status).toBe(200);
+      expect(script.headers["content-encoding"]).toBe(encoding);
+      expect(script.body.equals(compress(fixture.script))).toBe(true);
+    },
+  );
+
+  it.each([
+    ["*;q=0.5", "*;q=0.5, zstd;q=0"],
+    ["gzip, deflate, br, ZSTD;q=0.8, *;q=0.5", "gzip, deflate, br, *;q=0.5, zstd;q=0"],
+  ])("excludes Zstandard from %s when its decoder is unavailable", async (encoding, expected) => {
+    vi.resetModules();
+    vi.doMock("node:zlib", async (importOriginal) => ({
+      ...(await importOriginal<typeof import("node:zlib")>()),
+      default: { ...zlib, zstdDecompress: undefined },
+    }));
+    try {
+      const fixture = await setup();
+      const { session } = await fixture.register();
+      const response = await request(fixture.proxyPort, "/compressed", {
+        host: new URL(session.origin).host,
+        headers: { "accept-encoding": encoding },
+      });
+      expect(response.status).toBe(200);
+      expect(fixture.compressedPageHeaders[0]?.["accept-encoding"]).toBe(expected);
+    } finally {
+      vi.doUnmock("node:zlib");
+      vi.resetModules();
+    }
   });
 
   it("does not buffer SSE until completion", async () => {

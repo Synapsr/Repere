@@ -6,12 +6,14 @@ import http, {
 import https from "node:https";
 import { promisify } from "node:util";
 import type { Duplex } from "node:stream";
-import { brotliDecompress, gunzip, inflate } from "node:zlib";
+import zlib from "node:zlib";
 import { resolveDestination, type Resolver } from "./network";
 
-const decompressGzip = promisify(gunzip);
-const decompressBrotli = promisify(brotliDecompress);
-const decompressDeflate = promisify(inflate);
+const decompressGzip = promisify(zlib.gunzip);
+const decompressBrotli = promisify(zlib.brotliDecompress);
+const decompressDeflate = promisify(zlib.inflate);
+const decompressZstd =
+  typeof zlib.zstdDecompress === "function" ? promisify(zlib.zstdDecompress) : undefined;
 const hopHeaders = new Set([
   "connection",
   "keep-alive",
@@ -84,6 +86,16 @@ export async function openUpstream(
     options.allowedPrivateHosts,
     options.resolver,
   );
+  const headers: OutgoingHttpHeaders = { ...options.headers, host: target.host };
+  const acceptedEncodings = String(headers["accept-encoding"] ?? "*");
+  if (!decompressZstd && /(?:^|,)\s*(?:zstd|\*)\s*(?:;|,|$)/i.test(acceptedEncodings)) {
+    // Explicitly exclude Zstandard even when a client accepts it through a wildcard.
+    const encodings = acceptedEncodings
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry && !/^zstd\s*(?:;|$)/i.test(entry));
+    headers["accept-encoding"] = [...encodings, "zstd;q=0"].join(", ");
+  }
   return new Promise((resolve, reject) => {
     const request = (target.protocol === "https:" ? https : http).request(
       {
@@ -93,7 +105,7 @@ export async function openUpstream(
         servername: target.hostname.replace(/^\[|\]$/g, ""),
         method: options.method ?? "GET",
         path: `${target.pathname}${target.search}`,
-        headers: { ...options.headers, host: target.host },
+        headers,
         agent: false,
       },
       (response) => {
@@ -211,6 +223,8 @@ export async function readTextResponse(
     buffer = await decompressBrotli(buffer, { maxOutputLength: maximumBytes });
   else if (encoding === "deflate")
     buffer = await decompressDeflate(buffer, { maxOutputLength: maximumBytes });
+  else if (encoding === "zstd" && decompressZstd)
+    buffer = await decompressZstd(buffer, { maxOutputLength: maximumBytes });
   else if (encoding !== "identity") throw new Error("Unsupported text compression");
   if (buffer.length > maximumBytes) throw new Error("Decoded Text response exceeds the size limit");
   const charset =
